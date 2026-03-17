@@ -11,56 +11,58 @@ class DatabaseSeeder extends Seeder
 {
     public function run(): void
     {
-        // Salary months
-        $oct = SalaryMonth::create([
-            'month_key' => '2025-10',
-            'expected_salary' => 4000,
-            'currency' => 'MAD',
+        $this->call(UserSeeder::class);
+
+        // 1. Salary months: 07/2024 -> 03/2025 (3000), 04/2025 -> 12/2026 (4000)
+        $months = [];
+
+        foreach (['2024-07', '2024-08', '2024-09', '2024-10', '2024-11', '2024-12', '2025-01', '2025-02', '2025-03'] as $key) {
+            $months[$key] = SalaryMonth::create([
+                'month_key' => $key,
+                'expected_salary' => 3000,
+                'currency' => 'MAD',
+            ]);
+        }
+
+        for ($y = 2025; $y <= 2026; $y++) {
+            $start = $y === 2025 ? 4 : 1;
+            $end = $y === 2026 ? 12 : 12;
+            for ($m = $start; $m <= $end; $m++) {
+                $key = sprintf('%04d-%02d', $y, $m);
+                $months[$key] = SalaryMonth::create([
+                    'month_key' => $key,
+                    'expected_salary' => 4000,
+                    'currency' => 'MAD',
+                ]);
+            }
+        }
+
+        // 2. Full payouts from 07/2024 to 11/2025 (each month paid in full)
+        $fullPayoutMonths = [
+            '2024-07' => 3000, '2024-08' => 3000, '2024-09' => 3000, '2024-10' => 3000,
+            '2024-11' => 3000, '2024-12' => 3000, '2025-01' => 3000, '2025-02' => 3000,
+            '2025-03' => 3000, '2025-04' => 4000, '2025-05' => 4000, '2025-06' => 4000,
+            '2025-07' => 4000, '2025-08' => 4000, '2025-09' => 4000, '2025-10' => 4000,
+            '2025-11' => 4000,
+        ];
+
+        foreach ($fullPayoutMonths as $monthKey => $amount) {
+            [$year, $month] = explode('-', $monthKey);
+            $paidAt = sprintf('%04d-%02d-25 12:00:00', (int) $year, (int) $month);
+            $payout = Payout::create(['paid_at' => $paidAt, 'amount' => $amount]);
+            PayoutAllocation::create([
+                'payout_id' => $payout->id,
+                'salary_month_id' => $months[$monthKey]->id,
+                'amount' => $amount,
+            ]);
+        }
+
+        // 3. +3000 for 12/2025 (partial)
+        $payout = Payout::create(['paid_at' => '2025-12-25 12:00:00', 'amount' => 3000]);
+        PayoutAllocation::create([
+            'payout_id' => $payout->id,
+            'salary_month_id' => $months['2025-12']->id,
+            'amount' => 3000,
         ]);
-
-        $nov = SalaryMonth::create([
-            'month_key' => '2025-11',
-            'expected_salary' => 4000,
-            'currency' => 'MAD',
-        ]);
-
-        $dec = SalaryMonth::create([
-            'month_key' => '2025-12',
-            'expected_salary' => 4000,
-            'currency' => 'MAD',
-        ]);
-
-        // Payout 1: 2025-12-24 → 500 → all to October
-        $p1 = Payout::create(['paid_at' => '2025-12-24 00:00:00', 'amount' => 500]);
-        PayoutAllocation::create(['payout_id' => $p1->id, 'salary_month_id' => $oct->id, 'amount' => 500]);
-
-        // Payout 2: 2026-01-06 → 2000 → all to October (Oct remaining: 4000-500=3500, use 2000)
-        $p2 = Payout::create(['paid_at' => '2026-01-06 00:00:00', 'amount' => 2000]);
-        PayoutAllocation::create(['payout_id' => $p2->id, 'salary_month_id' => $oct->id, 'amount' => 2000]);
-
-        // Payout 3: 2026-01-19 → 2000 → 1500 closes October, 500 starts November
-        // Oct remaining: 4000-500-2000 = 1500
-        $p3 = Payout::create(['paid_at' => '2026-01-19 00:00:00', 'amount' => 2000]);
-        PayoutAllocation::create(['payout_id' => $p3->id, 'salary_month_id' => $oct->id, 'amount' => 1500]);
-        PayoutAllocation::create(['payout_id' => $p3->id, 'salary_month_id' => $nov->id, 'amount' => 500]);
-
-        // Payout 4: 2026-02-13 → 2000 → all to November (Nov remaining: 4000-500=3500, use 2000)
-        $p4 = Payout::create([
-            'paid_at' => '2026-02-13 00:00:00',
-            'amount' => 2000,
-            'note' => 'Includes 500 MAD for AI Tokens subscription.',
-        ]);
-        PayoutAllocation::create(['payout_id' => $p4->id, 'salary_month_id' => $nov->id, 'amount' => 2000]);
-
-        // Payout 5: 2026-03-01 → 2000 → 1500 closes November, 500 starts December
-        // Nov remaining: 4000-500-2000 = 1500
-        $p5 = Payout::create(['paid_at' => '2026-03-01 00:00:00', 'amount' => 2000]);
-        PayoutAllocation::create(['payout_id' => $p5->id, 'salary_month_id' => $nov->id, 'amount' => 1500]);
-        PayoutAllocation::create(['payout_id' => $p5->id, 'salary_month_id' => $dec->id, 'amount' => 500]);
-
-        // Final state:
-        // October  2025: 500+2000+1500 = 4000 → PAID
-        // November 2025: 500+2000+1500 = 4000 → PAID
-        // December 2025: 500           = 500  → PARTIAL (3500 remaining)
     }
 }

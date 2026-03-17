@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\SalaryMonth;
+use Carbon\Carbon;
 use Illuminate\Http\Request;
 
 class DashboardController extends Controller
@@ -47,10 +48,12 @@ class DashboardController extends Controller
             ->orderBy('y', 'desc')
             ->pluck('y');
 
+        $toDateLabel = Carbon::parse($currentMonthKey.'-01')->translatedFormat('M Y');
+
         return view('dashboard.index', compact(
             'months', 'totalExpected', 'totalPaid', 'totalRemaining',
             'currentMonthKey', 'toDateExpected', 'toDatePaid', 'toDateRemaining',
-            'years'
+            'toDateLabel', 'years'
         ));
     }
 }

@@ -22,42 +22,27 @@
 		</div>
 	</div>
 
-	{{-- Stats --}}
-	<div class="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-10">
-		<div
-			class="bg-white rounded-2xl border border-border p-5 shadow-sm relative overflow-hidden hover:-translate-y-0.5 hover:shadow-md transition-all duration-200">
-			<p class="text-xs font-semibold tracking-widest uppercase text-ink-soft mb-2">Total Expected</p>
-			<p class="font-mono text-2xl font-medium text-ink mb-3">{{ number_format($totalExpected, 2) }}</p>
-			<div class="pt-3 border-t border-border">
-				<p class="text-xs font-semibold tracking-widest uppercase text-ink-soft mb-2">Up to
-					{{ \Carbon\Carbon::parse($currentMonthKey . '-01')->translatedFormat('M Y') }}</p>
-				<p class="font-mono text-lg font-medium text-ink">{{ number_format($toDateExpected, 2) }}</p>
-			</div>
-			<div class="absolute bottom-0 left-0 right-0 h-[3px] bg-border"></div>
-		</div>
-		<div
-			class="bg-white rounded-2xl border border-border p-5 shadow-sm relative overflow-hidden hover:-translate-y-0.5 hover:shadow-md transition-all duration-200">
-			<p class="text-xs font-semibold tracking-widest uppercase text-ink-soft mb-2">Total Paid</p>
-			<p class="font-mono text-2xl font-medium text-emerald mb-3">{{ number_format($totalPaid, 2) }}</p>
-			<div class="pt-3 border-t border-border">
-				<p class="text-xs font-semibold tracking-widest uppercase text-ink-soft mb-2">Up to
-					{{ \Carbon\Carbon::parse($currentMonthKey . '-01')->translatedFormat('M Y') }}</p>
-				<p class="font-mono text-lg font-medium text-emerald">{{ number_format($toDatePaid, 2) }}</p>
-			</div>
-			<div class="absolute bottom-0 left-0 right-0 h-[3px] bg-emerald"></div>
-		</div>
-		<div
-			class="bg-white rounded-2xl border border-border p-5 shadow-sm relative overflow-hidden hover:-translate-y-0.5 hover:shadow-md transition-all duration-200">
-			<p class="text-xs font-semibold tracking-widest uppercase text-ink-soft mb-2">Total Remaining</p>
-			<p class="font-mono text-2xl font-medium {{ $totalRemaining > 0 ? 'text-ruby' : 'text-ink-soft' }} mb-3">
-				{{ number_format($totalRemaining, 2) }}</p>
-			<div class="pt-3 border-t border-border">
-				<p class="text-xs font-semibold tracking-widest uppercase text-ink-soft mb-2">Up to
-					{{ \Carbon\Carbon::parse($currentMonthKey . '-01')->translatedFormat('M Y') }}</p>
-				<p class="font-mono text-lg font-medium {{ $toDateRemaining > 0 ? 'text-ruby' : 'text-ink-soft' }}">
-					{{ number_format($toDateRemaining, 2) }}</p>
-			</div>
+	{{-- Stats: X / Y (Z remaining) --}}
+	<div class="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-10">
+		<div class="bg-white rounded-2xl border border-border p-4 shadow-sm relative overflow-hidden hover:-translate-y-0.5 hover:shadow-md transition-all duration-200">
+			<p class="text-xs font-semibold tracking-widest uppercase text-ink-soft mb-2">Overall</p>
+			<p class="font-mono text-xl font-medium">
+				<span class="text-emerald">{{ number_format($totalPaid, 2) }}</span>
+				<span class="text-ink-soft">/</span>
+				<span class="text-ink">{{ number_format($totalExpected, 2) }}</span>
+				<span class="text-sm font-normal {{ $totalRemaining > 0 ? 'text-ruby' : 'text-ink-soft' }}">({{ number_format($totalRemaining, 2) }} remaining)</span>
+			</p>
 			<div class="absolute bottom-0 left-0 right-0 h-[3px] {{ $totalRemaining > 0 ? 'bg-ruby' : 'bg-emerald' }}"></div>
+		</div>
+		<div class="bg-white rounded-2xl border border-border p-4 shadow-sm relative overflow-hidden hover:-translate-y-0.5 hover:shadow-md transition-all duration-200">
+			<p class="text-xs font-semibold tracking-widest uppercase text-ink-soft mb-2">To {{ $toDateLabel }}</p>
+			<p class="font-mono text-xl font-medium">
+				<span class="text-emerald">{{ number_format($toDatePaid, 2) }}</span>
+				<span class="text-ink-soft">/</span>
+				<span class="text-ink">{{ number_format($toDateExpected, 2) }}</span>
+				<span class="text-sm font-normal {{ $toDateRemaining > 0 ? 'text-ruby' : 'text-ink-soft' }}">({{ number_format($toDateRemaining, 2) }} remaining)</span>
+			</p>
+			<div class="absolute bottom-0 left-0 right-0 h-[3px] {{ $toDateRemaining > 0 ? 'bg-ruby' : 'bg-emerald' }}"></div>
 		</div>
 	</div>
 
