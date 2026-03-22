@@ -3,59 +3,39 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
-    container_name: salary_app
+    container_name: payroll_app
     restart: unless-stopped
     working_dir: /var/www/html
     volumes:
       - .:/var/www/html
-      - /var/www/html/vendor
-    environment:
-      - APP_ENV=local
-      - APP_DEBUG=true
     env_file:
       - .env.docker
-    depends_on:
-      db:
-        condition: service_healthy
     networks:
-      - salary_net
+      - payroll_net
 
   web:
     image: nginx:1.25-alpine
-    container_name: salary_web
+    container_name: payroll_web
     restart: unless-stopped
+    ports:
+      - "80:80"
     volumes:
       - .:/var/www/html
       - ./docker/nginx:/etc/nginx/conf.d
     depends_on:
       - app
     networks:
-      - salary_net
+      - payroll_net
 
-  db:
-    image: mysql:8.0
-    container_name: salary_db
-    restart: unless-stopped
-    environment:
-      MYSQL_DATABASE: salary_tracker
-      MYSQL_ROOT_PASSWORD: secret
-      MYSQL_USER: salary
-      MYSQL_PASSWORD: secret
-    ports:
-      - "3306:3306"
+  # One-off: docker compose --profile assets run --rm node sh -c "npm ci && npm run build"
+  node:
+    image: node:20-alpine
+    working_dir: /var/www/html
     volumes:
-      - db_data:/var/lib/mysql
-    healthcheck:
-      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-usalary", "-psecret"]
-      interval: 5s
-      timeout: 5s
-      retries: 10
-    networks:
-      - salary_net
+      - .:/var/www/html
+    profiles:
+      - assets
 
 networks:
-  salary_net:
+  payroll_net:
     driver: bridge
-
-volumes:
-  db_data:
