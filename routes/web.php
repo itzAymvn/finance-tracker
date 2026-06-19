@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\BackupController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\SalaryMonthController;
@@ -27,6 +28,13 @@ Route::middleware('auth')->group(function () {
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
+});
+
+Route::prefix('backup')->middleware(['auth'])->group(function () {
+    Route::get('/', [BackupController::class, 'index'])->name('backup.index');
+    Route::post('/export', [BackupController::class, 'export'])->name('backup.export');
+    Route::get('/download/{name}', [BackupController::class, 'download'])->name('backup.download');
+    Route::post('/restore', [BackupController::class, 'restore'])->name('backup.restore');
 });
 
 require __DIR__.'/auth.php';
