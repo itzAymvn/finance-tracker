@@ -2,88 +2,90 @@
 
 namespace App\Services;
 
-use App\Models\Payout;
-use App\Models\PayoutAllocation;
+use App\Models\SalaryAllocation;
 use App\Models\SalaryMonth;
+use App\Models\Transaction;
+use Carbon\Carbon;
 use Illuminate\Support\Facades\DB;
-use InvalidArgumentException;
 
 class AllocationService
 {
     /**
-     * Allocate a payout amount automatically to the oldest unpaid/partial months first.
-     * Deletes any existing allocations for the payout before creating new ones.
-     */
-    public function autoAllocate(Payout $payout): void
-    {
-        DB::transaction(function () use ($payout) {
-            $payout->allocations()->delete();
-
-            $months = SalaryMonth::orderBy('month_key')->get();
-
-            $remaining = (float) $payout->amount;
-
-            foreach ($months as $month) {
-                if ($remaining <= 0) {
-                    break;
-                }
-
-                $monthRemaining = (float) $month->expected_salary
-                    - (float) PayoutAllocation::where('salary_month_id', $month->id)->sum('amount');
-
-                if ($monthRemaining <= 0) {
-                    continue;
-                }
-
-                $allocate = min($monthRemaining, $remaining);
-
-                PayoutAllocation::create([
-                    'payout_id' => $payout->id,
-                    'salary_month_id' => $month->id,
-                    'amount' => $allocate,
-                ]);
-
-                $remaining -= $allocate;
-            }
-        });
-    }
-
-    /**
-     * Manually allocate a payout to specific months with explicit amounts.
+     * Allocate a salary transaction FIFO across eligible salary months
+     * (month_key <= transaction's paid_at month). Each month is capped at
+     * expected_salary; surplus rolls forward. Any leftover (insufficient
+     * future-eligible capacity) remains unallocated on the transaction.
      *
-     * @param  array<int, array{salary_month_id: int, amount: float}>  $lines
+     * Sets $transaction->salary_month_id to the first month touched.
+     *
+     * @return int  Number of allocation rows created.
      */
-    public function manualAllocate(Payout $payout, array $lines): void
+    public function reallocate(Transaction $transaction): int
     {
-        $total = array_sum(array_column($lines, 'amount'));
+        if (! $transaction->is_salary || ! $transaction->isCredit()) {
+            $transaction->salary_month_id = null;
+            $transaction->save();
+            $transaction->allocations()->delete();
 
-        if (round($total, 2) > round((float) $payout->amount, 2)) {
-            throw new InvalidArgumentException(
-                "Total allocated ({$total}) exceeds payout amount ({$payout->amount})."
-            );
+            return 0;
         }
 
-        $monthIds = array_column($lines, 'salary_month_id');
-        if (count($monthIds) !== count(array_unique($monthIds))) {
-            throw new InvalidArgumentException('Duplicate salary months in allocation.');
+        $transaction->allocations()->delete();
+
+        $paidMonthKey = $transaction->paid_at->format('Y-m');
+        $months = SalaryMonth::where('month_key', '<=', $paidMonthKey)
+            ->orderBy('month_key')
+            ->get();
+
+        if ($months->isEmpty()) {
+            $transaction->salary_month_id = null;
+            $transaction->save();
+
+            return 0;
         }
 
-        foreach ($lines as $line) {
-            if ((float) $line['amount'] <= 0) {
-                throw new InvalidArgumentException('Each allocation amount must be greater than zero.');
+        // Build capacity map: id => already-assigned total (excluding this tx).
+        $totals = DB::table('salary_allocations')
+            ->selectRaw('salary_month_id, SUM(amount) as total')
+            ->where('transaction_id', '!=', $transaction->id)
+            ->groupBy('salary_month_id')
+            ->pluck('total', 'salary_month_id')
+            ->map(fn ($v) => (float) $v)
+            ->all();
+
+        $remaining = (float) $transaction->amount;
+        $primaryMonthId = null;
+        $created = 0;
+
+        foreach ($months as $month) {
+            if ($remaining <= 0.005) {
+                break;
+            }
+            $assigned = $totals[$month->id] ?? 0.0;
+            $capacity = (float) $month->expected_salary - $assigned;
+            if ($capacity <= 0.005) {
+                continue;
+            }
+            $chunk = min($capacity, $remaining);
+
+            SalaryAllocation::create([
+                'transaction_id' => $transaction->id,
+                'salary_month_id' => $month->id,
+                'amount' => round($chunk, 2),
+            ]);
+            $created++;
+
+            $totals[$month->id] = ($totals[$month->id] ?? 0.0) + $chunk;
+            $remaining -= $chunk;
+
+            if ($primaryMonthId === null) {
+                $primaryMonthId = $month->id;
             }
         }
 
-        DB::transaction(function () use ($payout, $lines) {
-            $payout->allocations()->delete();
+        $transaction->salary_month_id = $primaryMonthId;
+        $transaction->save();
 
-            foreach ($lines as $line) {
-                PayoutAllocation::create([
-                    'payout_id' => $payout->id,
-                    'salary_month_id' => $line['salary_month_id'],
-                    'amount' => $line['amount'],
-                ]);
-            }
-        });
+        return $created;
     }
 }

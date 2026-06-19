@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\SalaryMonth;
+use App\Models\Transaction;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 
@@ -10,15 +11,12 @@ class DashboardController extends Controller
 {
     public function index(Request $request)
     {
-        $query = SalaryMonth::orderBy('month_key', 'desc')
-            ->with('allocations');
+        $query = SalaryMonth::orderBy('month_key', 'desc');
 
-        // Filter by year
         if ($year = $request->query('year')) {
             $query->where('month_key', 'like', $year.'-%');
         }
 
-        // Filter by month range
         if ($from = $request->query('from')) {
             $query->where('month_key', '>=', $from);
         }
@@ -28,7 +26,6 @@ class DashboardController extends Controller
 
         $months = $query->get();
 
-        // Filter by status (computed attribute)
         if ($status = $request->query('status')) {
             $months = $months->filter(fn ($m) => $m->status === $status)->values();
         }
@@ -37,7 +34,10 @@ class DashboardController extends Controller
         $totalPaid = $months->sum(fn ($m) => $m->total_paid);
         $totalRemaining = $months->sum(fn ($m) => $m->remaining);
 
-        $currentMonthKey = now()->format('Y-m');
+        $now = now();
+        $currentMonthKey = ($now->day === $now->daysInMonth)
+            ? $now->format('Y-m')
+            : $now->copy()->subMonth()->format('Y-m');
         $monthsToDate = $months->filter(fn ($m) => $m->month_key <= $currentMonthKey);
         $toDateExpected = $monthsToDate->sum(fn ($m) => (float) $m->expected_salary);
         $toDatePaid = $monthsToDate->sum(fn ($m) => $m->total_paid);
@@ -50,10 +50,12 @@ class DashboardController extends Controller
 
         $toDateLabel = Carbon::parse($currentMonthKey.'-01')->translatedFormat('M Y');
 
+        $currentBalance = (float) Transaction::sum('amount');
+
         return view('dashboard.index', compact(
             'months', 'totalExpected', 'totalPaid', 'totalRemaining',
             'currentMonthKey', 'toDateExpected', 'toDatePaid', 'toDateRemaining',
-            'toDateLabel', 'years'
+            'toDateLabel', 'years', 'currentBalance'
         ));
     }
 }

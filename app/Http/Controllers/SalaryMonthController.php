@@ -44,7 +44,6 @@ class SalaryMonthController extends Controller
                 $created++;
             }
 
-            // Advance by one month
             [$year, $month] = explode('-', $current);
             $month++;
             if ($month > 12) {
@@ -64,7 +63,9 @@ class SalaryMonthController extends Controller
 
     public function show(SalaryMonth $salaryMonth)
     {
-        $salaryMonth->load(['allocations.payout']);
+        $salaryMonth->load(['salaryTransactions' => function ($q) {
+            $q->orderBy('paid_at', 'desc');
+        }]);
 
         return view('salary-months.show', compact('salaryMonth'));
     }
