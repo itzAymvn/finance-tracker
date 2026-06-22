@@ -5,34 +5,43 @@ import type { DashboardProps } from '@/lib/types';
 import { formatMoney, formatMoneyInteger } from '@/lib/format';
 import { useModals } from '@/contexts/ModalContext';
 import { AppLayout } from '@/components/AppLayout';
+import { IncomeExpenseChart } from '@/components/IncomeExpenseChart';
+import { CategoryPieChart } from '@/components/CategoryPieChart';
 import { SalaryMonthsTable } from '@/components/SalaryMonthsTable';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
+import {
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
+} from '@/components/ui/select';
 
 export default function DashboardIndex() {
-    const { months, totalExpected, totalPaid, totalRemaining, toDateExpected, toDatePaid, toDateRemaining, toDateLabel, years, currentBalance } = usePage<DashboardProps>().props;
+    const { months, totalExpected, totalPaid, totalRemaining, toDateExpected, toDatePaid, toDateRemaining, toDateLabel, years, currentBalance, monthlyChart, categoryChart } = usePage<DashboardProps>().props;
     const modals = useModals();
 
-    const [status, setStatus] = useState('');
-    const [year, setYear] = useState('');
+    const [status, setStatus] = useState('all-statuses');
+    const [year, setYear] = useState('all-years');
     const [from, setFrom] = useState('');
     const [to, setTo] = useState('');
 
-    const hasFilters = status || year || from || to;
+    const hasFilters = (status && status !== 'all-statuses') || (year && year !== 'all-years') || from || to;
 
     function applyFilters() {
         const params: Record<string, string> = {};
-        if (status) params.status = status;
-        if (year) params.year = year;
+        if (status && status !== 'all-statuses') params.status = status;
+        if (year && year !== 'all-years') params.year = year;
         if (from) params.from = from;
         if (to) params.to = to;
         router.get('/', params, { preserveState: true });
     }
 
     function clearFilters() {
-        setStatus('');
-        setYear('');
+        setStatus('all-statuses');
+        setYear('all-years');
         setFrom('');
         setTo('');
         router.get('/');
@@ -129,53 +138,83 @@ export default function DashboardIndex() {
                 </CardContent>
             </Card>
 
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+                <IncomeExpenseChart data={monthlyChart} />
+                <CategoryPieChart data={categoryChart} />
+            </div>
+
             <div className="bg-card dark:bg-card rounded-xl border border-border dark:border-border shadow-sm overflow-hidden">
-                <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4 px-6 py-4 border-b border-border dark:border-border">
-                    <div>
-                        <h2 className="text-lg font-semibold text-foreground dark:text-white">Salary Months</h2>
-                        <p className="text-sm text-muted-foreground dark:text-slate-400 mt-0.5">Each month fills FIFO from tagged salary credits</p>
-                    </div>
-                    <div className="flex flex-wrap items-center gap-2">
-                        <select
-                            value={status}
-                            onChange={(e) => setStatus(e.target.value)}
-                            className="w-auto h-7 text-xs"
-                        >
-                            <option value="">All statuses</option>
-                            <option value="paid">Paid</option>
-                            <option value="partial">Partial</option>
-                            <option value="unpaid">Unpaid</option>
-                            <option value="overpaid">Overpaid</option>
-                        </select>
-                        <select
-                            value={year}
-                            onChange={(e) => setYear(e.target.value)}
-                            className="w-auto h-7 text-xs"
-                        >
-                            <option value="">All years</option>
-                            {(years ?? []).map((y) => (
-                                <option key={y} value={y}>{y}</option>
-                            ))}
-                        </select>
-                        <Input
-                            type="month"
-                            value={from}
-                            onChange={(e) => setFrom(e.target.value)}
-                            title="From month"
-                            className="w-auto h-7 text-xs font-mono"
-                        />
-                        <span className="text-muted-foreground dark:text-slate-400 text-xs">–</span>
-                        <Input
-                            type="month"
-                            value={to}
-                            onChange={(e) => setTo(e.target.value)}
-                            title="To month"
-                            className="w-auto h-7 text-xs font-mono"
-                        />
-                        <Button size="sm" onClick={applyFilters}>Apply</Button>
-                        {hasFilters && (
-                            <Button variant="ghost" size="sm" onClick={clearFilters}>Clear</Button>
-                        )}
+                <div className="px-6 py-5 border-b border-border dark:border-border bg-muted/50">
+                    <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
+                        <div>
+                            <h2 className="text-lg font-semibold text-foreground">Salary Months</h2>
+                            <p className="text-sm text-muted-foreground mt-0.5">Each month fills FIFO from tagged salary credits</p>
+                        </div>
+                        <div className="flex flex-wrap items-end gap-3">
+                            <Select
+                                value={status}
+                                onValueChange={setStatus}
+                                items={{
+                                    'all-statuses': 'All statuses',
+                                    'paid': 'Paid',
+                                    'partial': 'Partial',
+                                    'unpaid': 'Unpaid',
+                                    'overpaid': 'Overpaid',
+                                }}
+                            >
+                                <SelectTrigger className="h-9 text-xs w-[130px]">
+                                    <SelectValue placeholder="All statuses" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value="all-statuses">All statuses</SelectItem>
+                                    <SelectItem value="paid">Paid</SelectItem>
+                                    <SelectItem value="partial">Partial</SelectItem>
+                                    <SelectItem value="unpaid">Unpaid</SelectItem>
+                                    <SelectItem value="overpaid">Overpaid</SelectItem>
+                                </SelectContent>
+                            </Select>
+                            <Select
+                                value={year}
+                                onValueChange={setYear}
+                                items={{
+                                    'all-years': 'All years',
+                                    ...Object.fromEntries((years ?? []).map((y) => [y, y])),
+                                }}
+                            >
+                                <SelectTrigger className="h-9 text-xs w-[120px]">
+                                    <SelectValue placeholder="All years" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value="all-years">All years</SelectItem>
+                                    {(years ?? []).map((y) => (
+                                        <SelectItem key={y} value={y}>{y}</SelectItem>
+                                    ))}
+                                </SelectContent>
+                            </Select>
+                            <Input
+                                type="month"
+                                value={from}
+                                onChange={(e) => setFrom(e.target.value)}
+                                title="From month"
+                                className="h-9 text-xs font-mono w-[150px]"
+                            />
+                            <span className="text-muted-foreground text-xs pb-2">–</span>
+                            <Input
+                                type="month"
+                                value={to}
+                                onChange={(e) => setTo(e.target.value)}
+                                title="To month"
+                                className="h-9 text-xs font-mono w-[150px]"
+                            />
+                            <Button size="sm" onClick={applyFilters} className="h-9 text-xs px-4">
+                                Apply
+                            </Button>
+                            {hasFilters && (
+                                <Button variant="ghost" size="sm" onClick={clearFilters} className="h-9 text-xs">
+                                    Clear
+                                </Button>
+                            )}
+                        </div>
                     </div>
                 </div>
 
@@ -185,4 +224,5 @@ export default function DashboardIndex() {
     );
 }
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 (DashboardIndex as any).layout = (page: React.ReactNode) => <AppLayout>{page}</AppLayout>;

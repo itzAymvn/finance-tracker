@@ -3,11 +3,19 @@ import { router } from '@inertiajs/react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { Transaction } from '@/lib/types';
+import { Transaction, Category } from '@/lib/types';
 import { formatMoney, formatDate } from '@/lib/format';
+import { getCategoryIcon } from '@/lib/icons';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Checkbox } from '@/components/ui/checkbox';
+import {
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
+} from '@/components/ui/select';
 import {
     Form,
     FormControl,
@@ -19,17 +27,19 @@ import {
 import { TransactionDeleteDialog } from '@/components/TransactionDeleteDialog';
 
 const createSchema = z.object({
-    amount: z.number().positive('Amount must be greater than 0'),
+    amount: z.coerce.number().positive('Amount must be greater than 0'),
     amount_sign: z.union([z.literal(1), z.literal(-1)]),
     paid_at: z.string().min(1, 'Date is required'),
     value_date: z.string().optional(),
     label: z.string().min(1, 'Label is required').max(255),
     is_salary: z.boolean(),
+    category_id: z.coerce.number().nullable().optional(),
 });
 
 const editSchema = z.object({
     label: z.string().min(1, 'Label is required').max(255),
     is_salary: z.boolean(),
+    category_id: z.coerce.number().nullable().optional(),
 });
 
 type CreateValues = z.infer<typeof createSchema>;
@@ -37,10 +47,11 @@ type EditValues = z.infer<typeof editSchema>;
 
 interface TransactionFormProps {
     transaction?: Transaction | null;
+    categories?: Category[];
     onSuccess?: () => void;
 }
 
-export function TransactionForm({ transaction, onSuccess }: TransactionFormProps) {
+export function TransactionForm({ transaction, categories = [], onSuccess }: TransactionFormProps) {
     const isEdit = !!transaction;
     const [deleteOpen, setDeleteOpen] = useState(false);
 
@@ -53,6 +64,7 @@ export function TransactionForm({ transaction, onSuccess }: TransactionFormProps
             value_date: '',
             label: '',
             is_salary: false,
+            category_id: null,
         },
     });
 
@@ -61,6 +73,7 @@ export function TransactionForm({ transaction, onSuccess }: TransactionFormProps
         defaultValues: {
             label: transaction?.label ?? '',
             is_salary: transaction?.is_salary ?? false,
+            category_id: transaction?.category_id ?? null,
         },
     });
 
@@ -168,6 +181,46 @@ export function TransactionForm({ transaction, onSuccess }: TransactionFormProps
                                         <FormControl>
                                             <Input {...field} />
                                         </FormControl>
+                                        <FormMessage />
+                                    </FormItem>
+                                )}
+                            />
+
+                            <FormField
+                                control={editForm.control}
+                                name="category_id"
+                                render={({ field }) => (
+                                    <FormItem>
+                                        <FormLabel>Category</FormLabel>
+                                        <Select
+                                            value={field.value ? String(field.value) : ''}
+                                            onValueChange={(val) => field.onChange(val ? Number(val) : null)}
+                                            items={Object.fromEntries(
+                                                categories.map((cat) => {
+                                                    const IconComp = getCategoryIcon(cat.icon);
+                                                    return [String(cat.id), <span key={cat.id} className="flex items-center gap-2"><IconComp className="w-3.5 h-3.5 text-muted-foreground" />{cat.name}</span>];
+                                                })
+                                            )}
+                                        >
+                                            <FormControl>
+                                                <SelectTrigger>
+                                                    <SelectValue placeholder="No category" />
+                                                </SelectTrigger>
+                                            </FormControl>
+                                            <SelectContent>
+                                                {categories.map((cat) => {
+                                                    const IconComp = getCategoryIcon(cat.icon);
+                                                    return (
+                                                        <SelectItem key={cat.id} value={String(cat.id)}>
+                                                            <span className="flex items-center gap-2">
+                                                                <IconComp className="w-3.5 h-3.5 text-muted-foreground" />
+                                                                {cat.name}
+                                                            </span>
+                                                        </SelectItem>
+                                                    );
+                                                })}
+                                            </SelectContent>
+                                        </Select>
                                         <FormMessage />
                                     </FormItem>
                                 )}
@@ -339,6 +392,46 @@ export function TransactionForm({ transaction, onSuccess }: TransactionFormProps
                                     {...field}
                                 />
                             </FormControl>
+                            <FormMessage />
+                        </FormItem>
+                    )}
+                />
+
+                <FormField
+                    control={createForm.control}
+                    name="category_id"
+                    render={({ field }) => (
+                        <FormItem>
+                            <FormLabel>Category</FormLabel>
+                            <Select
+                                value={field.value ? String(field.value) : ''}
+                                onValueChange={(val) => field.onChange(val ? Number(val) : null)}
+                                items={Object.fromEntries(
+                                    categories.map((cat) => {
+                                        const IconComp = getCategoryIcon(cat.icon);
+                                        return [String(cat.id), <span key={cat.id} className="flex items-center gap-2"><IconComp className="w-3.5 h-3.5 text-muted-foreground" />{cat.name}</span>];
+                                    })
+                                )}
+                            >
+                                <FormControl>
+                                    <SelectTrigger className="py-2.5">
+                                        <SelectValue placeholder="No category" />
+                                    </SelectTrigger>
+                                </FormControl>
+                                <SelectContent>
+                                    {categories.map((cat) => {
+                                        const IconComp = getCategoryIcon(cat.icon);
+                                        return (
+                                            <SelectItem key={cat.id} value={String(cat.id)}>
+                                                <span className="flex items-center gap-2">
+                                                    <IconComp className="w-3.5 h-3.5 text-muted-foreground" />
+                                                    {cat.name}
+                                                </span>
+                                            </SelectItem>
+                                        );
+                                    })}
+                                </SelectContent>
+                            </Select>
                             <FormMessage />
                         </FormItem>
                     )}

@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\BackupController;
+use App\Http\Controllers\CategoryController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\SalaryMonthController;
@@ -22,6 +23,10 @@ Route::resource('salary-months', SalaryMonthController::class)
 
 Route::resource('transactions', TransactionController::class)
     ->only(['index', 'create', 'store', 'edit', 'update', 'destroy'])
+    ->middleware(['auth']);
+
+Route::resource('categories', CategoryController::class)
+    ->except(['show'])
     ->middleware(['auth']);
 
 Route::middleware('auth')->group(function () {

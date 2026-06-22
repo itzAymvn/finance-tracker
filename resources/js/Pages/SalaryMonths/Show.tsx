@@ -176,4 +176,5 @@ export default function SalaryMonthsShow() {
     );
 }
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 (SalaryMonthsShow as any).layout = (page: React.ReactNode) => <AppLayout>{page}</AppLayout>;

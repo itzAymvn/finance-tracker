@@ -1,13 +1,15 @@
 import { Link, usePage } from '@inertiajs/react';
 import { ArrowLeft } from 'lucide-react';
-import type { Transaction } from '@/lib/types';
+import type { Transaction, Category } from '@/lib/types';
 import { AppLayout } from '@/components/AppLayout';
 import { TransactionForm } from '@/components/TransactionForm';
 import { Button } from '@/components/ui/button';
 
 export default function TransactionsEdit() {
     const page = usePage();
-    const transaction = (page.props as Record<string, unknown>).transaction as Transaction;
+    const props = page.props as Record<string, unknown>;
+    const transaction = props.transaction as Transaction;
+    const categories = props.categories as Category[];
 
     return (
         <div className="max-w-2xl mx-auto">
@@ -22,9 +24,10 @@ export default function TransactionsEdit() {
                 </Button>
             </div>
 
-            <TransactionForm transaction={transaction} />
+            <TransactionForm transaction={transaction} categories={categories} />
         </div>
     );
 }
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 (TransactionsEdit as any).layout = (page: React.ReactNode) => <AppLayout>{page}</AppLayout>;

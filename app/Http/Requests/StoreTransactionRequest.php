@@ -20,6 +20,7 @@ class StoreTransactionRequest extends FormRequest
             'amount_sign'    => ['required', 'in:1,-1'],
             'is_salary'      => ['sometimes', 'boolean'],
             'value_date'     => ['nullable', 'date'],
+            'category_id'    => ['nullable', 'exists:categories,id'],
         ];
     }
 

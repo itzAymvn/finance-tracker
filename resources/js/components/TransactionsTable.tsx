@@ -2,6 +2,7 @@ import { createColumnHelper, useReactTable, getCoreRowModel, flexRender } from '
 import { Info, AlertTriangle } from 'lucide-react';
 import type { Transaction } from '@/lib/types';
 import { formatDate, formatMoney, formatMoneyInteger } from '@/lib/format';
+import { getCategoryIcon } from '@/lib/icons';
 import { useModals } from '@/contexts/ModalContext';
 import { Popover, PopoverTrigger, PopoverContent } from '@/components/ui/popover';
 import { Button } from '@/components/ui/button';
@@ -21,6 +22,23 @@ const columns = [
                 {info.getValue()}
             </div>
         ),
+    }),
+    columnHelper.display({
+        id: 'category',
+        header: 'Category',
+        cell: (info) => {
+            const cat = info.row.original.category;
+            if (!cat) {
+                return <span className="text-muted-foreground text-xs">—</span>;
+            }
+            const IconComp = getCategoryIcon(cat.icon);
+            return (
+                <span className="inline-flex items-center gap-1.5 text-xs font-medium text-foreground">
+                    <IconComp className="w-3.5 h-3.5 text-muted-foreground" />
+                    {cat.name}
+                </span>
+            );
+        },
     }),
     columnHelper.display({
         id: 'debit',

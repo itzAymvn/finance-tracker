@@ -1,5 +1,5 @@
 import { usePage, router } from '@inertiajs/react';
-import { Home, FileText, User, Database, LogOut } from 'lucide-react';
+import { Home, FileText, Tags, User, Database, LogOut } from 'lucide-react';
 import {
     Sidebar,
     SidebarContent,
@@ -16,6 +16,7 @@ import {
 const navItems = [
     { label: 'Overview', href: '/', route: 'dashboard', icon: Home },
     { label: 'Transactions', href: '/transactions', route: 'transactions.*', icon: FileText },
+    { label: 'Categories', href: '/categories', route: 'categories.*', icon: Tags },
 ];
 
 const bottomItems = [
@@ -28,6 +29,7 @@ function isActive(pattern: string, url: string) {
     if (pattern === 'transactions.*') return url.startsWith('/transactions');
     if (pattern === 'profile.*') return url.startsWith('/profile');
     if (pattern === 'backup.*') return url.startsWith('/backup');
+    if (pattern === 'categories.*') return url.startsWith('/categories');
     return false;
 }
 

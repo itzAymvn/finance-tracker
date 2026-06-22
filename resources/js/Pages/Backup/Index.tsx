@@ -189,4 +189,5 @@ export default function BackupIndex() {
     );
 }
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 (BackupIndex as any).layout = (page: React.ReactNode) => <AppLayout>{page}</AppLayout>;

@@ -44,4 +44,5 @@ export default function SalaryMonthsCreate() {
     );
 }
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 (SalaryMonthsCreate as any).layout = (page: React.ReactNode) => <AppLayout>{page}</AppLayout>;

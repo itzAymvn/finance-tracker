@@ -52,4 +52,5 @@ export default function SalaryMonthsEdit() {
     );
 }
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 (SalaryMonthsEdit as any).layout = (page: React.ReactNode) => <AppLayout>{page}</AppLayout>;

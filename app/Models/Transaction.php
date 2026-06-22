@@ -16,6 +16,7 @@ class Transaction extends Model
         'amount',
         'source',
         'is_salary',
+        'category_id',
         'salary_month_id',
         'raw',
     ];
@@ -31,6 +32,11 @@ class Transaction extends Model
     public function salaryMonth(): BelongsTo
     {
         return $this->belongsTo(SalaryMonth::class);
+    }
+
+    public function category(): BelongsTo
+    {
+        return $this->belongsTo(Category::class);
     }
 
     public function allocations(): HasMany

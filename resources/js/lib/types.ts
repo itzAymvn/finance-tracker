@@ -1,3 +1,11 @@
+export interface Category {
+    id: number;
+    name: string;
+    icon: string | null;
+    created_at?: string;
+    transaction_count?: number;
+}
+
 export interface SalaryMonth {
     id: number;
     month_key: string;
@@ -27,6 +35,8 @@ export interface Transaction {
     amount: string;
     source: string;
     is_salary: boolean;
+    category_id?: number | null;
+    category?: Category | null;
     salary_month_id: number | null;
     raw: unknown;
     created_at: string;
@@ -98,6 +108,19 @@ export interface PageProps {
     [key: string]: unknown;
 }
 
+export interface MonthlyChartData {
+    month: string;
+    label: string;
+    income: number;
+    expense: number;
+}
+
+export interface CategoryChartData {
+    name: string;
+    value: number;
+    icon: string | null;
+}
+
 export interface DashboardProps extends PageProps {
     months: SalaryMonth[];
     totalExpected: number;
@@ -110,6 +133,8 @@ export interface DashboardProps extends PageProps {
     toDateLabel: string;
     years: string[];
     currentBalance: number;
+    monthlyChart: MonthlyChartData[];
+    categoryChart: CategoryChartData[];
 }
 
 export interface TransactionsIndexProps extends PageProps {
@@ -121,6 +146,7 @@ export interface TransactionsIndexProps extends PageProps {
         debits: number;
         net: number;
     };
+    categories: Category[];
 }
 
 export interface SalaryMonthShowProps extends PageProps {
@@ -136,4 +162,8 @@ export interface BackupIndexProps extends PageProps {
 
 export interface ProfileEditProps extends PageProps {
     user: User;
+}
+
+export interface CategoriesIndexProps extends PageProps {
+    categories: Category[];
 }

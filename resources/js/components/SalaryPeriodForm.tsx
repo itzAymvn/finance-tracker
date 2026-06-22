@@ -16,7 +16,7 @@ import {
 const schema = z.object({
     from_month: z.string().min(1, 'Start month is required').regex(/^\d{4}-\d{2}$/, 'Start month must be in YYYY-MM format'),
     to_month: z.string().min(1, 'End month is required').regex(/^\d{4}-\d{2}$/, 'End month must be in YYYY-MM format'),
-    expected_salary: z.number().min(0.01, 'Expected salary must be at least 0.01'),
+    expected_salary: z.coerce.number().min(0.01, 'Expected salary must be at least 0.01'),
     currency: z.string().min(1, 'Currency is required').max(10),
     notes: z.string().max(1000).optional(),
 }).refine((data) => data.to_month >= data.from_month, {

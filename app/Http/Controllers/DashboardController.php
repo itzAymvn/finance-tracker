@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Category;
 use App\Models\SalaryMonth;
 use App\Models\Transaction;
 use Carbon\Carbon;
@@ -53,6 +54,44 @@ class DashboardController extends Controller
 
         $currentBalance = (float) Transaction::sum('amount');
 
+        // Chart data: monthly income vs expense (last 12 months)
+        $monthlyData = Transaction::selectRaw("
+                strftime('%Y-%m', paid_at) as month,
+                SUM(CASE WHEN amount > 0 THEN amount ELSE 0 END) as income,
+                SUM(CASE WHEN amount < 0 THEN ABS(amount) ELSE 0 END) as expense
+            ")
+            ->groupBy('month')
+            ->orderBy('month', 'desc')
+            ->limit(12)
+            ->get()
+            ->reverse()
+            ->values()
+            ->map(fn ($row) => [
+                'month' => $row->month,
+                'label' => Carbon::parse($row->month.'-01')->format('M Y'),
+                'income' => round((float) $row->income, 2),
+                'expense' => round((float) $row->expense, 2),
+            ]);
+
+        // Chart data: category breakdown (expenses only)
+        $categoryBreakdown = Transaction::selectRaw("
+                category_id,
+                SUM(ABS(amount)) as total
+            ")
+            ->where('amount', '<', 0)
+            ->whereNotNull('category_id')
+            ->groupBy('category_id')
+            ->orderBy('total', 'desc')
+            ->get()
+            ->map(function ($row) {
+                $cat = Category::find($row->category_id);
+                return [
+                    'name' => $cat?->name ?? 'Unknown',
+                    'value' => round((float) $row->total, 2),
+                    'icon' => $cat?->icon,
+                ];
+            });
+
         return Inertia::render('Dashboard/Index', [
             'months' => $months->map(fn ($m) => array_merge($m->toArray(), [
                 'label' => $m->label,
@@ -76,6 +115,8 @@ class DashboardController extends Controller
             'toDateLabel' => $toDateLabel,
             'years' => $years,
             'currentBalance' => $currentBalance,
+            'monthlyChart' => $monthlyData,
+            'categoryChart' => $categoryBreakdown,
         ]);
     }
 }

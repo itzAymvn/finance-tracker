@@ -14,8 +14,9 @@ class UpdateTransactionRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'is_salary' => ['required', 'boolean'],
-            'label'     => ['required', 'string', 'max:255'],
+            'is_salary'   => ['required', 'boolean'],
+            'label'       => ['required', 'string', 'max:255'],
+            'category_id' => ['nullable', 'exists:categories,id'],
         ];
     }
 

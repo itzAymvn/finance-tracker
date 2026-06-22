@@ -32,4 +32,5 @@ export default function ProfileEdit() {
     );
 }
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 (ProfileEdit as any).layout = (page: React.ReactNode) => <AppLayout>{page}</AppLayout>;

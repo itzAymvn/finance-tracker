@@ -1,10 +1,13 @@
-import { Link } from '@inertiajs/react';
+import { Link, usePage } from '@inertiajs/react';
 import { ArrowLeft } from 'lucide-react';
+import type { Category } from '@/lib/types';
 import { AppLayout } from '@/components/AppLayout';
 import { TransactionForm } from '@/components/TransactionForm';
 import { Button } from '@/components/ui/button';
 
 export default function TransactionsCreate() {
+    const { categories } = usePage<{ categories: Category[] }>().props;
+
     return (
         <div className="max-w-2xl mx-auto">
             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-8">
@@ -19,10 +22,11 @@ export default function TransactionsCreate() {
             </div>
 
             <div className="bg-card dark:bg-card rounded-xl border border-border dark:border-border shadow-sm">
-                <TransactionForm />
+                <TransactionForm categories={categories} />
             </div>
         </div>
     );
 }
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 (TransactionsCreate as any).layout = (page: React.ReactNode) => <AppLayout>{page}</AppLayout>;

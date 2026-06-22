@@ -16,7 +16,7 @@ import {
 
 const schema = z.object({
     month_key: z.string().min(1, 'Month is required').regex(/^\d{4}-\d{2}$/, 'Month key must be in YYYY-MM format'),
-    expected_salary: z.number().min(0.01, 'Expected salary must be at least 0.01'),
+    expected_salary: z.coerce.number().min(0.01, 'Expected salary must be at least 0.01'),
     currency: z.string().min(1, 'Currency is required').max(10),
     notes: z.string().max(1000).optional(),
 });
