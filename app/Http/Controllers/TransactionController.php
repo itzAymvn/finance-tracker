@@ -92,6 +92,7 @@ class TransactionController extends Controller
     public function update(UpdateTransactionRequest $request, Transaction $transaction)
     {
         $transaction->is_salary = $request->boolean('is_salary');
+        $transaction->label = $request->input('label');
         $transaction->save();
 
         $this->allocationService->reallocate($transaction);

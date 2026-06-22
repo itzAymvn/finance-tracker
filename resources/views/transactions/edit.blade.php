@@ -69,6 +69,15 @@
             @csrf
             @method('PATCH')
 
+            <div>
+                <label for="label" class="block text-sm font-medium text-ink dark:text-white mb-1.5">Label</label>
+                <input type="text" name="label" id="label" value="{{ old('label', $transaction->label) }}"
+                       class="w-full rounded-lg border border-border dark:border-border-dark bg-surface-card dark:bg-surface-dark-card px-3 py-2 text-sm text-ink dark:text-white focus:ring-2 focus:ring-primary/20 focus:border-primary">
+                @error('label')
+                    <p class="text-ruby dark:text-ruby-400 text-xs mt-1">{{ $message }}</p>
+                @enderror
+            </div>
+
             @if($transaction->isCredit())
             <label class="flex items-start gap-3 cursor-pointer p-4 rounded-lg border border-border dark:border-border-dark bg-surface-hover/50 dark:bg-surface-dark-hover/50 hover:bg-surface-hover dark:hover:bg-surface-dark-hover transition-colors">
                 <input type="checkbox" name="is_salary" value="1"

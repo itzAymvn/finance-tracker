@@ -15,6 +15,7 @@ class UpdateTransactionRequest extends FormRequest
     {
         return [
             'is_salary' => ['required', 'boolean'],
+            'label'     => ['required', 'string', 'max:255'],
         ];
     }
 
