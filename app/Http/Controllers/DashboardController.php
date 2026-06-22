@@ -43,7 +43,7 @@ class DashboardController extends Controller
         $toDatePaid = $monthsToDate->sum(fn ($m) => $m->total_paid);
         $toDateRemaining = $monthsToDate->sum(fn ($m) => $m->remaining);
 
-        $years = SalaryMonth::selectRaw('SUBSTRING(month_key, 1, 4) as y')
+        $years = SalaryMonth::selectRaw("substr(month_key, 1, 4) as y")
             ->distinct()
             ->orderBy('y', 'desc')
             ->pluck('y');

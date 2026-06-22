@@ -22,70 +22,73 @@ class AllocationService
      */
     public function reallocate(Transaction $transaction): int
     {
-        if (! $transaction->is_salary || ! $transaction->isCredit()) {
-            $transaction->salary_month_id = null;
-            $transaction->save();
+        return DB::transaction(function () use ($transaction) {
+            if (! $transaction->is_salary || ! $transaction->isCredit()) {
+                $transaction->salary_month_id = null;
+                $transaction->save();
+                $transaction->allocations()->delete();
+
+                return 0;
+            }
+
             $transaction->allocations()->delete();
 
-            return 0;
-        }
+            $paidMonthKey = $transaction->paid_at->format('Y-m');
+            $months = SalaryMonth::where('month_key', '<=', $paidMonthKey)
+                ->orderBy('month_key')
+                ->lockForUpdate()
+                ->get();
 
-        $transaction->allocations()->delete();
+            if ($months->isEmpty()) {
+                $transaction->salary_month_id = null;
+                $transaction->save();
 
-        $paidMonthKey = $transaction->paid_at->format('Y-m');
-        $months = SalaryMonth::where('month_key', '<=', $paidMonthKey)
-            ->orderBy('month_key')
-            ->get();
+                return 0;
+            }
 
-        if ($months->isEmpty()) {
-            $transaction->salary_month_id = null;
+            // Build capacity map: id => already-assigned total (excluding this tx).
+            $totals = DB::table('salary_allocations')
+                ->selectRaw('salary_month_id, SUM(amount) as total')
+                ->where('transaction_id', '!=', $transaction->id)
+                ->groupBy('salary_month_id')
+                ->pluck('total', 'salary_month_id')
+                ->map(fn ($v) => (float) $v)
+                ->all();
+
+            $remaining = (float) $transaction->amount;
+            $primaryMonthId = null;
+            $created = 0;
+
+            foreach ($months as $month) {
+                if ($remaining <= 0.005) {
+                    break;
+                }
+                $assigned = $totals[$month->id] ?? 0.0;
+                $capacity = (float) $month->expected_salary - $assigned;
+                if ($capacity <= 0.005) {
+                    continue;
+                }
+                $chunk = min($capacity, $remaining);
+
+                SalaryAllocation::create([
+                    'transaction_id' => $transaction->id,
+                    'salary_month_id' => $month->id,
+                    'amount' => round($chunk, 2),
+                ]);
+                $created++;
+
+                $totals[$month->id] = ($totals[$month->id] ?? 0.0) + $chunk;
+                $remaining -= $chunk;
+
+                if ($primaryMonthId === null) {
+                    $primaryMonthId = $month->id;
+                }
+            }
+
+            $transaction->salary_month_id = $primaryMonthId;
             $transaction->save();
 
-            return 0;
-        }
-
-        // Build capacity map: id => already-assigned total (excluding this tx).
-        $totals = DB::table('salary_allocations')
-            ->selectRaw('salary_month_id, SUM(amount) as total')
-            ->where('transaction_id', '!=', $transaction->id)
-            ->groupBy('salary_month_id')
-            ->pluck('total', 'salary_month_id')
-            ->map(fn ($v) => (float) $v)
-            ->all();
-
-        $remaining = (float) $transaction->amount;
-        $primaryMonthId = null;
-        $created = 0;
-
-        foreach ($months as $month) {
-            if ($remaining <= 0.005) {
-                break;
-            }
-            $assigned = $totals[$month->id] ?? 0.0;
-            $capacity = (float) $month->expected_salary - $assigned;
-            if ($capacity <= 0.005) {
-                continue;
-            }
-            $chunk = min($capacity, $remaining);
-
-            SalaryAllocation::create([
-                'transaction_id' => $transaction->id,
-                'salary_month_id' => $month->id,
-                'amount' => round($chunk, 2),
-            ]);
-            $created++;
-
-            $totals[$month->id] = ($totals[$month->id] ?? 0.0) + $chunk;
-            $remaining -= $chunk;
-
-            if ($primaryMonthId === null) {
-                $primaryMonthId = $month->id;
-            }
-        }
-
-        $transaction->salary_month_id = $primaryMonthId;
-        $transaction->save();
-
-        return $created;
+            return $created;
+        });
     }
 }

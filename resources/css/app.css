@@ -1,6 +1,63 @@
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+@import "tailwindcss";
+
+@variant dark (&:where(.dark, .dark *));
+
+@theme {
+  --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji";
+  --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, "Menlo", "Monaco", "Consolas", "Liberation Mono", "Courier New", monospace;
+
+  --color-surface: #f8fafc;
+  --color-surface-card: #ffffff;
+  --color-surface-sidebar: #0f172a;
+  --color-surface-hover: #f1f5f9;
+  --color-surface-dark: #0b1120;
+  --color-surface-dark-card: #131b2e;
+  --color-surface-dark-hover: #1e293b;
+
+  --color-primary: #6366f1;
+  --color-primary-hover: #4f46e5;
+  --color-primary-light: #eef2ff;
+  --color-primary-subtle: #a5b4fc;
+  --color-primary-400: #818cf8;
+
+  --color-ink: #0f172a;
+  --color-ink-dim: #334155;
+  --color-ink-soft: #64748b;
+  --color-ink-dark: #f1f5f9;
+  --color-ink-dark-dim: #94a3b8;
+  --color-ink-dark-soft: #64748b;
+
+  --color-border: #e2e8f0;
+  --color-border-dark: #1e293b;
+
+  --color-emerald: #059669;
+  --color-emerald-300: #6ee7b7;
+  --color-emerald-400: #34d399;
+  --color-emerald-500: #10b981;
+  --color-emerald-lt: #ecfdf5;
+  --color-emerald-dark-bg: #052e16;
+
+  --color-ruby: #dc2626;
+  --color-ruby-300: #fca5a5;
+  --color-ruby-400: #f87171;
+  --color-ruby-500: #ef4444;
+  --color-ruby-lt: #fef2f2;
+  --color-ruby-dark-bg: #450a0a;
+
+  --color-amber: #d97706;
+  --color-amber-300: #fcd34d;
+  --color-amber-400: #fbbf24;
+  --color-amber-500: #f59e0b;
+  --color-amber-lt: #fffbeb;
+  --color-amber-dark-bg: #451a03;
+
+  --color-sapphire: #2563eb;
+  --color-sapphire-300: #93c5fd;
+  --color-sapphire-400: #60a5fa;
+  --color-sapphire-500: #3b82f6;
+  --color-sapphire-lt: #eff6ff;
+  --color-sapphire-dark-bg: #172554;
+}
 
 @layer base {
   html {
@@ -43,35 +100,35 @@
     @apply inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium;
   }
   .badge-emerald {
-    @apply badge bg-emerald-lt text-emerald dark:bg-emerald-dark-bg dark:text-emerald-400;
+    @apply inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-emerald-lt text-emerald dark:bg-emerald-dark-bg dark:text-emerald-400;
   }
   .badge-ruby {
-    @apply badge bg-ruby-lt text-ruby dark:bg-ruby-dark-bg dark:text-ruby-400;
+    @apply inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-ruby-lt text-ruby dark:bg-ruby-dark-bg dark:text-ruby-400;
   }
   .badge-amber {
-    @apply badge bg-amber-lt text-amber dark:bg-amber-dark-bg dark:text-amber-400;
+    @apply inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-amber-lt text-amber dark:bg-amber-dark-bg dark:text-amber-400;
   }
   .badge-sapphire {
-    @apply badge bg-sapphire-lt text-sapphire dark:bg-sapphire-dark-bg dark:text-blue-400;
+    @apply inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-sapphire-lt text-sapphire dark:bg-sapphire-dark-bg dark:text-blue-400;
   }
   .badge-slate {
-    @apply badge bg-slate-100 text-slate-500 dark:bg-slate-800 dark:text-slate-400;
+    @apply inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-slate-100 text-slate-500 dark:bg-slate-800 dark:text-slate-400;
   }
 
   .btn {
     @apply inline-flex items-center justify-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all duration-150 no-underline cursor-pointer;
   }
   .btn-primary {
-    @apply btn bg-primary text-white hover:bg-primary-hover shadow-sm;
+    @apply inline-flex items-center justify-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all duration-150 no-underline cursor-pointer bg-primary text-white hover:bg-primary-hover shadow-sm;
   }
   .btn-secondary {
-    @apply btn bg-white dark:bg-surface-dark-card text-ink-dim dark:text-slate-300 border border-border dark:border-border-dark hover:bg-surface-hover dark:hover:bg-surface-dark-hover hover:text-ink dark:hover:text-white shadow-sm;
+    @apply inline-flex items-center justify-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all duration-150 no-underline cursor-pointer bg-white dark:bg-surface-dark-card text-ink-dim dark:text-slate-300 border border-border dark:border-border-dark hover:bg-surface-hover dark:hover:bg-surface-dark-hover hover:text-ink dark:hover:text-white shadow-sm;
   }
   .btn-ghost {
-    @apply btn text-ink-soft dark:text-slate-400 hover:text-ink dark:hover:text-white hover:bg-surface-hover dark:hover:bg-surface-dark-hover;
+    @apply inline-flex items-center justify-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all duration-150 no-underline cursor-pointer text-ink-soft dark:text-slate-400 hover:text-ink dark:hover:text-white hover:bg-surface-hover dark:hover:bg-surface-dark-hover;
   }
   .btn-danger {
-    @apply btn text-ruby border border-ruby/20 hover:bg-ruby-lt dark:hover:bg-ruby-dark-bg;
+    @apply inline-flex items-center justify-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all duration-150 no-underline cursor-pointer text-ruby border border-ruby/20 hover:bg-ruby-lt dark:hover:bg-ruby-dark-bg;
   }
 
   .input-field {
@@ -85,10 +142,10 @@
     @apply flex items-start gap-3 p-4 rounded-xl text-sm;
   }
   .flash-success {
-    @apply flash bg-emerald-lt border-l-4 border-emerald text-emerald dark:bg-emerald-dark-bg dark:text-emerald-400;
+    @apply flex items-start gap-3 p-4 rounded-xl text-sm bg-emerald-lt border-l-4 border-emerald text-emerald dark:bg-emerald-dark-bg dark:text-emerald-400;
   }
   .flash-error {
-    @apply flash bg-ruby-lt border-l-4 border-ruby text-ruby dark:bg-ruby-dark-bg dark:text-ruby-400;
+    @apply flex items-start gap-3 p-4 rounded-xl text-sm bg-ruby-lt border-l-4 border-ruby text-ruby dark:bg-ruby-dark-bg dark:text-ruby-400;
   }
 
   .page-header {
