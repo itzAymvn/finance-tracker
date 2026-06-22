@@ -7,6 +7,7 @@ use App\Http\Requests\UpdateTransactionRequest;
 use App\Models\Transaction;
 use App\Services\AllocationService;
 use Illuminate\Http\Request;
+use Inertia\Inertia;
 
 class TransactionController extends Controller
 {
@@ -49,12 +50,35 @@ class TransactionController extends Controller
             ->orderBy('y', 'desc')
             ->pluck('y');
 
-        return view('transactions.index', compact('transactions', 'years', 'summary'));
+        return Inertia::render('Transactions/Index', [
+            'transactions' => $transactions->through(fn ($tx) => [
+                'id' => $tx->id,
+                'paid_at' => $tx->paid_at->toIso8601String(),
+                'value_date' => $tx->value_date?->toIso8601String(),
+                'label' => $tx->label,
+                'amount' => $tx->amount,
+                'source' => $tx->source,
+                'is_salary' => $tx->is_salary,
+                'allocations' => $tx->allocations->map(fn ($a) => [
+                    'id' => $a->id,
+                    'amount' => $a->amount,
+                    'salary_month' => $a->salaryMonth ? [
+                        'id' => $a->salaryMonth->id,
+                        'month_key' => $a->salaryMonth->month_key,
+                        'label' => $a->salaryMonth->label,
+                    ] : null,
+                ])->toArray(),
+                'allocated_total' => $tx->allocated_total,
+                'unallocated' => $tx->unallocated,
+            ])->toArray(),
+            'years' => $years,
+            'summary' => $summary,
+        ]);
     }
 
     public function create()
     {
-        return view('transactions.create');
+        return Inertia::render('Transactions/Create');
     }
 
     public function store(StoreTransactionRequest $request)
@@ -86,7 +110,28 @@ class TransactionController extends Controller
     {
         $transaction->load('allocations.salaryMonth');
 
-        return view('transactions.edit', compact('transaction'));
+        return Inertia::render('Transactions/Edit', [
+            'transaction' => [
+                'id' => $transaction->id,
+                'paid_at' => $transaction->paid_at->toIso8601String(),
+                'value_date' => $transaction->value_date?->toIso8601String(),
+                'label' => $transaction->label,
+                'amount' => $transaction->amount,
+                'source' => $transaction->source,
+                'is_salary' => $transaction->is_salary,
+                'allocations' => $transaction->allocations->map(fn ($a) => [
+                    'id' => $a->id,
+                    'amount' => $a->amount,
+                    'salary_month' => $a->salaryMonth ? [
+                        'id' => $a->salaryMonth->id,
+                        'month_key' => $a->salaryMonth->month_key,
+                        'label' => $a->salaryMonth->label,
+                    ] : null,
+                ])->toArray(),
+                'allocated_total' => $transaction->allocated_total,
+                'unallocated' => $transaction->unallocated,
+            ],
+        ]);
     }
 
     public function update(UpdateTransactionRequest $request, Transaction $transaction)

@@ -6,12 +6,13 @@ use App\Http\Requests\StoreSalaryMonthPeriodRequest;
 use App\Http\Requests\StoreSalaryMonthRequest;
 use App\Http\Requests\UpdateSalaryMonthRequest;
 use App\Models\SalaryMonth;
+use Inertia\Inertia;
 
 class SalaryMonthController extends Controller
 {
     public function create()
     {
-        return view('salary-months.create');
+        return Inertia::render('SalaryMonths/Create');
     }
 
     public function store(StoreSalaryMonthRequest $request)
@@ -67,12 +68,43 @@ class SalaryMonthController extends Controller
             $q->orderBy('paid_at', 'desc');
         }]);
 
-        return view('salary-months.show', compact('salaryMonth'));
+        $allocations = $salaryMonth->salaryAllocations()
+            ->with('transaction')
+            ->orderByDesc(\App\Models\Transaction::select('paid_at')->whereColumn('id', 'salary_allocations.transaction_id'))
+            ->get()
+            ->map(fn ($a) => [
+                'id' => $a->id,
+                'transaction_id' => $a->transaction_id,
+                'salary_month_id' => $a->salary_month_id,
+                'amount' => $a->amount,
+                'transaction' => $a->transaction ? [
+                    'id' => $a->transaction->id,
+                    'paid_at' => $a->transaction->paid_at->toIso8601String(),
+                    'label' => $a->transaction->label,
+                    'amount' => $a->transaction->amount,
+                ] : null,
+            ])->toArray();
+
+        return Inertia::render('SalaryMonths/Show', [
+            'salaryMonth' => array_merge($salaryMonth->toArray(), [
+                'label' => $salaryMonth->label,
+                'total_paid' => $salaryMonth->total_paid,
+                'remaining' => $salaryMonth->remaining,
+                'status' => $salaryMonth->status,
+                'progress_percent' => $salaryMonth->progress_percent,
+                'cumulative_paid' => $salaryMonth->cumulative_paid,
+                'cumulative_due' => $salaryMonth->cumulative_due,
+                'cumulative_remaining' => $salaryMonth->cumulative_remaining,
+                'cumulative_status' => $salaryMonth->cumulative_status,
+                'cumulative_progress_percent' => $salaryMonth->cumulative_progress_percent,
+            ]),
+            'allocations' => $allocations,
+        ]);
     }
 
     public function edit(SalaryMonth $salaryMonth)
     {
-        return view('salary-months.edit', compact('salaryMonth'));
+        return Inertia::render('SalaryMonths/Edit', ['salaryMonth' => array_merge($salaryMonth->toArray(), ['label' => $salaryMonth->label])]);
     }
 
     public function update(UpdateSalaryMonthRequest $request, SalaryMonth $salaryMonth)

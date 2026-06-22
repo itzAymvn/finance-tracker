@@ -6,6 +6,7 @@ use App\Models\SalaryMonth;
 use App\Models\Transaction;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
+use Inertia\Inertia;
 
 class DashboardController extends Controller
 {
@@ -52,10 +53,29 @@ class DashboardController extends Controller
 
         $currentBalance = (float) Transaction::sum('amount');
 
-        return view('dashboard.index', compact(
-            'months', 'totalExpected', 'totalPaid', 'totalRemaining',
-            'currentMonthKey', 'toDateExpected', 'toDatePaid', 'toDateRemaining',
-            'toDateLabel', 'years', 'currentBalance'
-        ));
+        return Inertia::render('Dashboard/Index', [
+            'months' => $months->map(fn ($m) => array_merge($m->toArray(), [
+                'label' => $m->label,
+                'total_paid' => $m->total_paid,
+                'remaining' => $m->remaining,
+                'status' => $m->status,
+                'progress_percent' => $m->progress_percent,
+                'cumulative_paid' => $m->cumulative_paid,
+                'cumulative_due' => $m->cumulative_due,
+                'cumulative_remaining' => $m->cumulative_remaining,
+                'cumulative_status' => $m->cumulative_status,
+                'cumulative_progress_percent' => $m->cumulative_progress_percent,
+            ]))->values()->toArray(),
+            'totalExpected' => $totalExpected,
+            'totalPaid' => $totalPaid,
+            'totalRemaining' => $totalRemaining,
+            'currentMonthKey' => $currentMonthKey,
+            'toDateExpected' => $toDateExpected,
+            'toDatePaid' => $toDatePaid,
+            'toDateRemaining' => $toDateRemaining,
+            'toDateLabel' => $toDateLabel,
+            'years' => $years,
+            'currentBalance' => $currentBalance,
+        ]);
     }
 }

@@ -10,6 +10,7 @@ use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
+use Inertia\Inertia;
 
 class BackupController extends Controller
 {
@@ -39,7 +40,11 @@ class BackupController extends Controller
             $nextRun = $this->estimateNextAutoBackup($settings['backup_interval_hours']);
         }
 
-        return view('backup.index', compact('backups', 'settings', 'nextRun'));
+        return Inertia::render('Backup/Index', [
+            'backups' => $backups->toArray(),
+            'settings' => $settings,
+            'nextRun' => $nextRun?->toIso8601String(),
+        ]);
     }
 
     public function export()
