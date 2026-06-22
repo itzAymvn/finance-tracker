@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { router } from '@inertiajs/react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -8,7 +8,6 @@ import { formatMoney, formatDate } from '@/lib/format';
 import { getCategoryIcon } from '@/lib/icons';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Checkbox } from '@/components/ui/checkbox';
 import {
     Select,
     SelectContent,
@@ -32,13 +31,11 @@ const createSchema = z.object({
     paid_at: z.string().min(1, 'Date is required'),
     value_date: z.string().optional(),
     label: z.string().min(1, 'Label is required').max(255),
-    is_salary: z.boolean(),
     category_id: z.coerce.number().nullable().optional(),
 });
 
 const editSchema = z.object({
     label: z.string().min(1, 'Label is required').max(255),
-    is_salary: z.boolean(),
     category_id: z.coerce.number().nullable().optional(),
 });
 
@@ -63,7 +60,6 @@ export function TransactionForm({ transaction, categories = [], onSuccess }: Tra
             paid_at: new Date().toISOString().split('T')[0],
             value_date: '',
             label: '',
-            is_salary: false,
             category_id: null,
         },
     });
@@ -72,18 +68,11 @@ export function TransactionForm({ transaction, categories = [], onSuccess }: Tra
         resolver: zodResolver(editSchema),
         defaultValues: {
             label: transaction?.label ?? '',
-            is_salary: transaction?.is_salary ?? false,
             category_id: transaction?.category_id ?? null,
         },
     });
 
     const amountSign = createForm.watch('amount_sign');
-
-    useEffect(() => {
-        if (amountSign === -1) {
-            createForm.setValue('is_salary', false);
-        }
-    }, [amountSign, createForm]);
 
     function handleCreateError(errors: Record<string, string>) {
         Object.entries(errors).forEach(([key, message]) => {
@@ -147,7 +136,7 @@ export function TransactionForm({ transaction, categories = [], onSuccess }: Tra
                         </div>
                     </div>
 
-                    {transaction.is_salary && hasAllocations && (
+                    {transaction.category?.is_salary && hasAllocations && (
                         <div className="py-3 border-b border-border">
                             <p className="text-[10px] font-semibold tracking-wider uppercase text-emerald-600 mb-2">Allocated FIFO across months</p>
                             <div className="space-y-1">
@@ -225,36 +214,6 @@ export function TransactionForm({ transaction, categories = [], onSuccess }: Tra
                                     </FormItem>
                                 )}
                             />
-
-                            {credit && (
-                                <FormField
-                                    control={editForm.control}
-                                    name="is_salary"
-                                    render={({ field }) => (
-                                        <FormItem>
-                                            <label className="flex items-start gap-3 cursor-pointer p-4 rounded-lg border border-border dark:border-border bg-muted/50 dark:bg-muted/50 hover:bg-muted dark:hover:bg-muted transition-colors">
-                                                <FormControl>
-                                                    <Checkbox
-                                                        checked={field.value}
-                                                        onCheckedChange={field.onChange}
-                                                        className="mt-0.5"
-                                                    />
-                                                </FormControl>
-                                                <div>
-                                                    <span className="block text-sm font-medium text-foreground dark:text-white">This is a salary credit</span>
-                                                    <span className="block text-xs text-muted-foreground dark:text-slate-400 mt-0.5">
-                                                        Turning this off removes all allocations. Turning it on splits the credit FIFO across eligible salary months on save.
-                                                    </span>
-                                                </div>
-                                            </label>
-                                        </FormItem>
-                                    )}
-                                />
-                            )}
-
-                            {!credit && (
-                                <p className="text-sm text-muted-foreground dark:text-slate-400 italic">This is a debit transaction. Salary tagging only applies to credits.</p>
-                            )}
 
                             <div className="flex items-center justify-between gap-3 pt-4 border-t border-border dark:border-border">
                                 <Button
@@ -433,31 +392,6 @@ export function TransactionForm({ transaction, categories = [], onSuccess }: Tra
                                 </SelectContent>
                             </Select>
                             <FormMessage />
-                        </FormItem>
-                    )}
-                />
-
-                <FormField
-                    control={createForm.control}
-                    name="is_salary"
-                    render={({ field }) => (
-                        <FormItem>
-                            <label className={`flex items-start gap-3 cursor-pointer p-4 rounded-lg border border-border dark:border-border bg-muted/50 dark:bg-muted/50 hover:bg-muted dark:hover:bg-muted transition-colors ${amountSign === -1 ? 'opacity-50 pointer-events-none' : ''}`}>
-                                <FormControl>
-                                    <Checkbox
-                                        checked={field.value}
-                                        onCheckedChange={field.onChange}
-                                        disabled={amountSign === -1}
-                                        className="mt-0.5"
-                                    />
-                                </FormControl>
-                                <div>
-                                    <span className="block text-sm font-medium text-foreground dark:text-white">This is a salary credit</span>
-                                    <span className="block text-xs text-muted-foreground dark:text-slate-400 mt-0.5">
-                                        Tag as salary &mdash; the credit will be split FIFO across eligible salary months on save (applies only when type = Credit).
-                                    </span>
-                                </div>
-                            </label>
                         </FormItem>
                     )}
                 />

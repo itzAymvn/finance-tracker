@@ -17,6 +17,7 @@ class UpdateCategoryRequest extends FormRequest
         return [
             'name' => ['required', 'string', 'max:255', Rule::unique('categories')->ignore($this->route('category'))],
             'icon' => ['nullable', 'string', 'max:255'],
+            'is_salary' => ['sometimes', 'boolean'],
         ];
     }
 }

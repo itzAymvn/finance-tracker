@@ -74,7 +74,15 @@ export default function CategoriesIndex() {
                                             </div>
                                         </TableCell>
                                         <TableCell className="px-5 py-4 text-sm font-medium text-foreground">
-                                            {cat.name}
+                                            <div className="flex items-center gap-2">
+                                                {cat.name}
+                                                {cat.is_salary && (
+                                                    <span className="badge-emerald">
+                                                        <span className="w-1.5 h-1.5 rounded-full bg-emerald mr-1"></span>
+                                                        Salary
+                                                    </span>
+                                                )}
+                                            </div>
                                         </TableCell>
                                         <TableCell className="px-5 py-4 text-sm text-muted-foreground font-mono">
                                             {cat.transaction_count ?? 0}

@@ -2,6 +2,7 @@ export interface Category {
     id: number;
     name: string;
     icon: string | null;
+    is_salary?: boolean;
     created_at?: string;
     transaction_count?: number;
 }
@@ -34,7 +35,6 @@ export interface Transaction {
     label: string;
     amount: string;
     source: string;
-    is_salary: boolean;
     category_id?: number | null;
     category?: Category | null;
     salary_month_id: number | null;
@@ -105,6 +105,7 @@ export interface PageProps {
         status: string | null;
     };
     errors: Record<string, string[]>;
+    categories: Category[];
     [key: string]: unknown;
 }
 

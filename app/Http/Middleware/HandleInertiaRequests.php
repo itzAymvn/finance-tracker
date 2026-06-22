@@ -2,6 +2,7 @@
 
 namespace App\Http\Middleware;
 
+use App\Models\Category;
 use Illuminate\Http\Request;
 use Inertia\Middleware;
 
@@ -48,6 +49,7 @@ class HandleInertiaRequests extends Middleware
             'errors' => fn () => $request->session()->get('errors')
                 ? $request->session()->get('errors')->getBag('default')->getMessages()
                 : [],
+            'categories' => fn () => Category::orderBy('name')->get(['id', 'name', 'icon', 'is_salary']),
         ];
     }
 }

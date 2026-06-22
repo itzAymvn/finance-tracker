@@ -39,7 +39,7 @@ class SalaryMonth extends Model
         return $this->belongsToMany(Transaction::class, 'salary_allocations')
             ->withPivot('amount')
             ->using(SalaryAllocation::class)
-            ->where('is_salary', true);
+            ->whereHas('category', fn ($q) => $q->where('is_salary', true));
     }
 
     /**
@@ -117,7 +117,8 @@ class SalaryMonth extends Model
 
         return (float) DB::table('salary_allocations')
             ->join('transactions', 'salary_allocations.transaction_id', '=', 'transactions.id')
-            ->where('transactions.is_salary', true)
+            ->join('categories', 'transactions.category_id', '=', 'categories.id')
+            ->where('categories.is_salary', true)
             ->where('transactions.paid_at', '<=', $endOfMonth)
             ->sum('salary_allocations.amount');
     }

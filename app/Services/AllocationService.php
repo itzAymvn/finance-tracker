@@ -23,7 +23,7 @@ class AllocationService
     public function reallocate(Transaction $transaction): int
     {
         return DB::transaction(function () use ($transaction) {
-            if (! $transaction->is_salary || ! $transaction->isCredit()) {
+            if (! $transaction->isSalary() || ! $transaction->isCredit()) {
                 $transaction->salary_month_id = null;
                 $transaction->save();
                 $transaction->allocations()->delete();

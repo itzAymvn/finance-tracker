@@ -2,6 +2,7 @@
 
 namespace App\Console\Commands;
 
+use App\Models\Category;
 use App\Models\Transaction;
 use App\Services\AllocationService;
 use Illuminate\Console\Command;
@@ -24,6 +25,8 @@ class RetagTransactions extends Command
         $reflection = new \ReflectionClass(ImportTransactions::class);
         $patterns = $reflection->getConstant('SALARY_PATTERNS');
 
+        $salaryCategoryId = Category::where('is_salary', true)->value('id');
+
         $tagged = 0;
         $untagged = 0;
         $unchanged = 0;
@@ -31,13 +34,14 @@ class RetagTransactions extends Command
 
         foreach ($credits as $tx) {
             $shouldBeSalary = $this->matchesAny($tx->label, $patterns);
+            $isSalary = $tx->category_id === $salaryCategoryId;
 
-            if ($shouldBeSalary === $tx->is_salary) {
+            if ($shouldBeSalary === $isSalary) {
                 $unchanged++;
                 continue;
             }
 
-            $tx->is_salary = $shouldBeSalary;
+            $tx->category_id = $shouldBeSalary ? $salaryCategoryId : null;
             $tx->save();
 
             $this->allocationService->reallocate($tx);

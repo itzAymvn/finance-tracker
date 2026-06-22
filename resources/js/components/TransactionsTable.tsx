@@ -85,7 +85,7 @@ const columns = [
                                 </PopoverContent>
                             </Popover>
                         )}
-                        {tx.is_salary && unallocated > 0.005 && (
+                        {tx.category?.is_salary && unallocated > 0.005 && (
                             <Popover>
                                 <PopoverTrigger>
                                     <AlertTriangle className="w-3.5 h-3.5 inline text-amber-600 dark:text-amber-600-400 hover:text-amber-600/80 transition-colors ml-1 cursor-pointer" />
@@ -110,7 +110,7 @@ const columns = [
         cell: (info) => {
             const tx = info.row.original;
             const unallocated = tx.unallocated ?? 0;
-            if (tx.is_salary) {
+            if (tx.category?.is_salary) {
                 return (
                     <div className="flex items-center gap-1.5">
                         <span className="badge-emerald">

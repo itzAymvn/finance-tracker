@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Category;
 use App\Models\SalaryAllocation;
 use App\Models\SalaryMonth;
 use App\Models\Setting;
@@ -55,6 +56,7 @@ class BackupController extends Controller
             'exported_at' => now()->toIso8601String(),
             'kind' => 'manual',
             'users' => User::all()->map(fn ($u) => array_merge($u->toArray(), ['password' => $u->getAuthPassword()]))->values()->toArray(),
+            'categories' => Category::all()->toArray(),
             'transactions' => Transaction::all()->toArray(),
             'salary_months' => SalaryMonth::all()->toArray(),
             'salary_allocations' => SalaryAllocation::all()->toArray(),
@@ -122,12 +124,20 @@ class BackupController extends Controller
             DB::delete('delete from salary_allocations');
             DB::delete('delete from transactions');
             DB::delete('delete from salary_months');
+            DB::delete('delete from categories');
             DB::delete('delete from users');
 
             foreach ($data['users'] ?? [] as $row) {
                 DB::insert('insert into users (id, name, email, password, created_at, updated_at) values (?, ?, ?, ?, ?, ?)', [
                     $row['id'], $row['name'], $row['email'],
                     $row['password'] ?? $currentUser?->getAuthPassword() ?? bcrypt('password'),
+                    $row['created_at'] ?? now(), $row['updated_at'] ?? now(),
+                ]);
+            }
+
+            foreach ($data['categories'] ?? [] as $row) {
+                DB::insert('insert into categories (id, name, icon, is_salary, created_at, updated_at) values (?, ?, ?, ?, ?, ?)', [
+                    $row['id'], $row['name'], $row['icon'] ?? null, (int) ($row['is_salary'] ?? 0),
                     $row['created_at'] ?? now(), $row['updated_at'] ?? now(),
                 ]);
             }
@@ -142,9 +152,9 @@ class BackupController extends Controller
             foreach ($data['transactions'] ?? [] as $row) {
                 $raw = $row['raw'] ?? null;
                 if (is_array($raw)) $raw = json_encode($raw);
-                DB::insert('insert into transactions (id, paid_at, value_date, label, amount, source, is_salary, raw, created_at, updated_at) values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)', [
+                DB::insert('insert into transactions (id, paid_at, value_date, label, amount, source, category_id, raw, created_at, updated_at) values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)', [
                     $row['id'], $row['paid_at'], $row['value_date'] ?? null, $row['label'], $row['amount'],
-                    $row['source'] ?? 'manual', $row['is_salary'] ?? false, $raw,
+                    $row['source'] ?? 'manual', $row['category_id'] ?? null, $raw,
                     $row['created_at'] ?? now(), $row['updated_at'] ?? now(),
                 ]);
             }

@@ -2,7 +2,9 @@
 
 namespace App\Http\Requests;
 
+use App\Models\Category;
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Validation\Validator;
 
 class StoreTransactionRequest extends FormRequest
 {
@@ -18,10 +20,24 @@ class StoreTransactionRequest extends FormRequest
             'label'          => ['required', 'string', 'max:255'],
             'amount'         => ['required', 'numeric', 'not_in:0'],
             'amount_sign'    => ['required', 'in:1,-1'],
-            'is_salary'      => ['sometimes', 'boolean'],
             'value_date'     => ['nullable', 'date'],
             'category_id'    => ['nullable', 'exists:categories,id'],
         ];
+    }
+
+    public function withValidator(Validator $validator): void
+    {
+        $validator->after(function (Validator $validator) {
+            $categoryId = $this->input('category_id');
+            $sign = (int) $this->input('amount_sign');
+
+            if ($categoryId && $sign === -1) {
+                $category = Category::find($categoryId);
+                if ($category?->is_salary) {
+                    $validator->errors()->add('category_id', 'The salary category can only be used for credit transactions.');
+                }
+            }
+        });
     }
 
     public function prepareForValidation(): void
@@ -31,13 +47,6 @@ class StoreTransactionRequest extends FormRequest
         $amount = (float) $this->input('amount');
         if ($amount > 0) {
             $this->merge(['amount' => round($amount * $sign, 2)]);
-        }
-
-        // Debits cannot be salary.
-        if ($sign < 0) {
-            $this->merge(['is_salary' => false]);
-        } else if (! $this->has('is_salary')) {
-            $this->merge(['is_salary' => false]);
         }
 
         if ($this->has('value_date') && $this->input('value_date') === '') {

@@ -6,6 +6,7 @@ import type { Category } from '@/lib/types';
 import { CATEGORY_ICONS, CATEGORY_ICON_NAMES, getCategoryIcon } from '@/lib/icons';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { Checkbox } from '@/components/ui/checkbox';
 import {
     Form,
     FormControl,
@@ -18,6 +19,7 @@ import {
 const schema = z.object({
     name: z.string().min(1, 'Name is required').max(255),
     icon: z.string().nullable().optional(),
+    is_salary: z.boolean(),
 });
 
 type FormValues = z.infer<typeof schema>;
@@ -35,6 +37,7 @@ export function CategoryForm({ category, onSuccess }: CategoryFormProps) {
         defaultValues: {
             name: category?.name ?? '',
             icon: category?.icon ?? null,
+            is_salary: category?.is_salary ?? false,
         },
     });
 
@@ -110,6 +113,31 @@ export function CategoryForm({ category, onSuccess }: CategoryFormProps) {
                             <p className="text-xs text-muted-foreground mt-1 flex items-center gap-1.5">
                                 Selected: <SelectedIconComponent className="w-3.5 h-3.5" /> {selectedIcon ?? 'none'}
                             </p>
+                            <FormMessage />
+                        </FormItem>
+                    )}
+                />
+
+                <FormField
+                    control={form.control}
+                    name="is_salary"
+                    render={({ field }) => (
+                        <FormItem>
+                            <label className="flex items-start gap-3 cursor-pointer p-4 rounded-lg border border-border bg-muted/50 hover:bg-muted transition-colors">
+                                <FormControl>
+                                    <Checkbox
+                                        checked={field.value}
+                                        onCheckedChange={field.onChange}
+                                        className="mt-0.5"
+                                    />
+                                </FormControl>
+                                <div>
+                                    <span className="block text-sm font-medium text-foreground">Salary category</span>
+                                    <span className="block text-xs text-muted-foreground mt-0.5">
+                                        Mark this as the salary category &mdash; credits here are split FIFO across eligible salary months. Only one category can be salary.
+                                    </span>
+                                </div>
+                            </label>
                             <FormMessage />
                         </FormItem>
                     )}

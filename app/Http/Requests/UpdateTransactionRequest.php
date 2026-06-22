@@ -2,7 +2,9 @@
 
 namespace App\Http\Requests;
 
+use App\Models\Category;
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Validation\Validator;
 
 class UpdateTransactionRequest extends FormRequest
 {
@@ -14,17 +16,25 @@ class UpdateTransactionRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'is_salary'   => ['required', 'boolean'],
             'label'       => ['required', 'string', 'max:255'],
             'category_id' => ['nullable', 'exists:categories,id'],
         ];
     }
 
-    public function prepareForValidation(): void
+    public function withValidator(Validator $validator): void
     {
-        // Normalize unchecked checkbox.
-        if (! $this->has('is_salary')) {
-            $this->merge(['is_salary' => false]);
-        }
+        $validator->after(function (Validator $validator) {
+            $categoryId = $this->input('category_id');
+
+            if ($categoryId) {
+                $category = Category::find($categoryId);
+                if ($category?->is_salary) {
+                    $transaction = $this->route('transaction');
+                    if ($transaction && (float) $transaction->amount < 0) {
+                        $validator->errors()->add('category_id', 'The salary category can only be used for credit transactions.');
+                    }
+                }
+            }
+        });
     }
 }

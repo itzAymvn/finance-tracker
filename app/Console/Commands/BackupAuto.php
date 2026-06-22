@@ -2,6 +2,7 @@
 
 namespace App\Console\Commands;
 
+use App\Models\Category;
 use App\Models\Setting;
 use App\Models\SalaryAllocation;
 use App\Models\SalaryMonth;
@@ -52,6 +53,7 @@ class BackupAuto extends Command
             'exported_at' => now()->toIso8601String(),
             'kind' => 'auto',
             'users' => User::all()->map(fn ($u) => array_merge($u->toArray(), ['password' => $u->getAuthPassword()]))->values()->toArray(),
+            'categories' => Category::all()->toArray(),
             'transactions' => Transaction::all()->toArray(),
             'salary_months' => SalaryMonth::all()->toArray(),
             'salary_allocations' => SalaryAllocation::all()->toArray(),

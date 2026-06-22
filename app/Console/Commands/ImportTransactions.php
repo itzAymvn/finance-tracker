@@ -2,6 +2,7 @@
 
 namespace App\Console\Commands;
 
+use App\Models\Category;
 use App\Models\Transaction;
 use App\Services\AllocationService;
 use Carbon\Carbon;
@@ -14,7 +15,7 @@ class ImportTransactions extends Command
 {
     protected $signature = 'transactions:import {file : Path to the .xlsx file}';
 
-    protected $description = 'Import bank transactions from an .xlsx export. Salary credits matching known senders are tagged is_salary and split FIFO across salary months (each month capped at expected_salary, surplus rolls forward).';
+    protected $description = 'Import bank transactions from an .xlsx export. Salary credits matching known senders are assigned the salary category and split FIFO across salary months (each month capped at expected_salary, surplus rolls forward).';
 
     private const SALARY_PATTERNS = [
         'VIREMENT RECU DE MUSTAPHA JAAFARY',
@@ -51,6 +52,8 @@ class ImportTransactions extends Command
         $rowNum = 0;
 
         DB::transaction(function () use ($rows, &$imported, &$skipped, &$invalid, &$tagged, &$partial, &$rowNum) {
+            $salaryCategoryId = Category::where('is_salary', true)->value('id');
+
             foreach ($rows as $row) {
                 $rowNum++;
                 if ($rowNum === 1) {
@@ -110,7 +113,7 @@ class ImportTransactions extends Command
                     'label' => $label,
                     'amount' => $amount,
                     'source' => 'relevé',
-                    'is_salary' => $isSalary,
+                    'category_id' => $isSalary ? $salaryCategoryId : null,
                     'salary_month_id' => null,
                     'raw' => [
                         'row' => $rowNum,

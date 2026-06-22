@@ -67,9 +67,9 @@ class DbImport extends Command
             foreach ($data['transactions'] ?? [] as $row) {
                 $raw = $row['raw'] ?? null;
                 if (is_array($raw)) $raw = json_encode($raw);
-                DB::insert('insert into transactions (id, paid_at, value_date, label, amount, source, is_salary, raw, created_at, updated_at) values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)', [
+                DB::insert('insert into transactions (id, paid_at, value_date, label, amount, source, raw, created_at, updated_at) values (?, ?, ?, ?, ?, ?, ?, ?, ?)', [
                     $row['id'], $row['paid_at'], $row['value_date'] ?? null, $row['label'], $row['amount'],
-                    $row['source'] ?? 'manual', $row['is_salary'] ?? false, $raw,
+                    $row['source'] ?? 'manual', $raw,
                     $row['created_at'] ?? now(), $row['updated_at'] ?? now(),
                 ]);
                 $bar->advance();

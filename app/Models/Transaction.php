@@ -15,7 +15,6 @@ class Transaction extends Model
         'label',
         'amount',
         'source',
-        'is_salary',
         'category_id',
         'salary_month_id',
         'raw',
@@ -25,7 +24,6 @@ class Transaction extends Model
         'paid_at' => 'datetime',
         'value_date' => 'datetime',
         'amount' => 'decimal:2',
-        'is_salary' => 'boolean',
         'raw' => 'array',
     ];
 
@@ -56,7 +54,7 @@ class Transaction extends Model
 
     public function scopeSalary(Builder $q): Builder
     {
-        return $q->where('is_salary', true);
+        return $q->whereHas('category', fn ($cq) => $cq->where('is_salary', true));
     }
 
     public function isCredit(): bool
@@ -67,6 +65,11 @@ class Transaction extends Model
     public function isDebit(): bool
     {
         return (float) $this->amount < 0;
+    }
+
+    public function isSalary(): bool
+    {
+        return $this->category?->is_salary === true;
     }
 
     /**

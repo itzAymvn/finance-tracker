@@ -31,7 +31,7 @@ class TransactionController extends Controller
             match ($type) {
                 'credit' => $query->where('amount', '>', 0),
                 'debit'  => $query->where('amount', '<', 0),
-                'salary' => $query->where('is_salary', true),
+                'salary' => $query->whereHas('category', fn ($cq) => $cq->where('is_salary', true)),
                 default  => null,
             };
         }
@@ -66,11 +66,12 @@ class TransactionController extends Controller
                 'label' => $tx->label,
                 'amount' => $tx->amount,
                 'source' => $tx->source,
-                'is_salary' => $tx->is_salary,
+                'category_id' => $tx->category_id,
                 'category' => $tx->category ? [
                     'id' => $tx->category->id,
                     'name' => $tx->category->name,
                     'icon' => $tx->category->icon,
+                    'is_salary' => $tx->category->is_salary,
                 ] : null,
                 'allocations' => $tx->allocations->map(fn ($a) => [
                     'id' => $a->id,
@@ -86,21 +87,20 @@ class TransactionController extends Controller
             ])->toArray(),
             'years' => $years,
             'summary' => $summary,
-            'categories' => Category::orderBy('name')->get(['id', 'name', 'icon']),
+            'categories' => Category::orderBy('name')->get(['id', 'name', 'icon', 'is_salary']),
         ]);
     }
 
     public function create()
     {
         return Inertia::render('Transactions/Create', [
-            'categories' => Category::orderBy('name')->get(['id', 'name', 'icon']),
+            'categories' => Category::orderBy('name')->get(['id', 'name', 'icon', 'is_salary']),
         ]);
     }
 
     public function store(StoreTransactionRequest $request)
     {
         $data = $request->validated();
-        $isSalary = (bool) ($data['is_salary'] ?? false);
 
         $valueDate = $data['value_date'] ?? null;
 
@@ -110,11 +110,11 @@ class TransactionController extends Controller
             'label'        => $data['label'],
             'amount'       => $data['amount'],
             'source'       => 'manuel',
-            'is_salary'    => $isSalary,
             'category_id'  => $data['category_id'] ?? null,
         ]);
 
-        if ($isSalary) {
+        $transaction->load('category');
+        if ($transaction->isSalary()) {
             $this->allocationService->reallocate($transaction);
         }
 
@@ -135,12 +135,12 @@ class TransactionController extends Controller
                 'label' => $transaction->label,
                 'amount' => $transaction->amount,
                 'source' => $transaction->source,
-                'is_salary' => $transaction->is_salary,
                 'category_id' => $transaction->category_id,
                 'category' => $transaction->category ? [
                     'id' => $transaction->category->id,
                     'name' => $transaction->category->name,
                     'icon' => $transaction->category->icon,
+                    'is_salary' => $transaction->category->is_salary,
                 ] : null,
                 'allocations' => $transaction->allocations->map(fn ($a) => [
                     'id' => $a->id,
@@ -154,17 +154,17 @@ class TransactionController extends Controller
                 'allocated_total' => $transaction->allocated_total,
                 'unallocated' => $transaction->unallocated,
             ],
-            'categories' => Category::orderBy('name')->get(['id', 'name', 'icon']),
+            'categories' => Category::orderBy('name')->get(['id', 'name', 'icon', 'is_salary']),
         ]);
     }
 
     public function update(UpdateTransactionRequest $request, Transaction $transaction)
     {
-        $transaction->is_salary = $request->boolean('is_salary');
         $transaction->label = $request->input('label');
         $transaction->category_id = $request->input('category_id');
         $transaction->save();
 
+        $transaction->load('category');
         $this->allocationService->reallocate($transaction);
 
         return redirect()

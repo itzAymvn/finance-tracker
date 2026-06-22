@@ -19,6 +19,7 @@ class CategoryController extends Controller
                 'id' => $c->id,
                 'name' => $c->name,
                 'icon' => $c->icon,
+                'is_salary' => $c->is_salary,
                 'transaction_count' => $c->transactions_count,
                 'created_at' => $c->created_at->toIso8601String(),
             ]);
@@ -30,7 +31,14 @@ class CategoryController extends Controller
 
     public function store(StoreCategoryRequest $request)
     {
-        Category::create($request->validated());
+        $data = $request->validated();
+
+        // Only one category can be the salary category.
+        if (($data['is_salary'] ?? false)) {
+            Category::where('is_salary', true)->update(['is_salary' => false]);
+        }
+
+        Category::create($data);
 
         return redirect()
             ->route('categories.index')
@@ -39,7 +47,14 @@ class CategoryController extends Controller
 
     public function update(UpdateCategoryRequest $request, Category $category)
     {
-        $category->update($request->validated());
+        $data = $request->validated();
+
+        // Only one category can be the salary category.
+        if (($data['is_salary'] ?? false) && ! $category->is_salary) {
+            Category::where('is_salary', true)->update(['is_salary' => false]);
+        }
+
+        $category->update($data);
 
         return redirect()
             ->route('categories.index')
