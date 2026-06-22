@@ -93,15 +93,17 @@
             <p class="text-sm text-ink-soft dark:text-slate-400 italic">This is a debit transaction. Salary tagging only applies to credits.</p>
             @endif
 
-            <div class="flex items-center justify-between gap-3 pt-4 border-t border-border dark:border-border-dark">
-                <form method="POST" action="{{ route('transactions.destroy', $transaction) }}"
-                      onsubmit="return confirm('Delete this transaction? This also removes its salary allocations.');">
-                    @csrf
-                    @method('DELETE')
-                    <button type="submit" class="btn-danger">Delete</button>
-                </form>
+            <div class="flex items-center justify-end gap-3 pt-4 border-t border-border dark:border-border-dark">
                 <button type="submit" class="btn-primary">Save Changes</button>
             </div>
+        </form>
+
+        <form method="POST" action="{{ route('transactions.destroy', $transaction) }}"
+              onsubmit="return confirm('Delete this transaction? This also removes its salary allocations.');"
+              class="px-6 pb-6">
+            @csrf
+            @method('DELETE')
+            <button type="submit" class="btn-danger">Delete</button>
         </form>
     </div>
 </div>
