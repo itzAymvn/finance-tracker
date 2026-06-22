@@ -1,8 +1,6 @@
 services:
   app:
-    build:
-      context: .
-      dockerfile: Dockerfile
+    image: payroll-app:current
     container_name: payroll_app
     restart: unless-stopped
     working_dir: /var/www/html
@@ -35,6 +33,26 @@ services:
       - .:/var/www/html
     profiles:
       - assets
+
+  # Laravel scheduled task worker. Runs `schedule:work` which polls every minute
+  # and dispatches due tasks (auto-backup, etc.). Shares the same image/volume
+  # as the main app container. We bypass the image's FPM entrypoint via
+  # `entrypoint: []` and pass the schedule command directly.
+  scheduler:
+    image: payroll-app:current
+    container_name: payroll_scheduler
+    restart: unless-stopped
+    working_dir: /var/www/html
+    entrypoint: []
+    command: sh -c "if [ ! -f .env ] && [ -f .env.docker ]; then cp .env.docker .env; fi && php artisan schedule:work"
+    volumes:
+      - .:/var/www/html
+    env_file:
+      - .env.docker
+    depends_on:
+      - app
+    networks:
+      - payroll_net
 
 networks:
   payroll_net:

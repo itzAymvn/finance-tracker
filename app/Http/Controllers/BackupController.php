@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\SalaryAllocation;
 use App\Models\SalaryMonth;
+use App\Models\Setting;
 use App\Models\Transaction;
 use App\Models\User;
 use Illuminate\Http\Request;
@@ -12,19 +13,33 @@ use Illuminate\Support\Facades\Storage;
 
 class BackupController extends Controller
 {
+    private const ALLOWED_INTERVALS = [6, 12, 24, 168];
+
     public function index()
     {
         $backups = collect(Storage::files('backups'))
             ->filter(fn ($f) => str_ends_with($f, '.json'))
             ->map(fn ($f) => [
                 'name' => basename($f),
+                'kind' => str_starts_with(basename($f), 'auto-') ? 'auto' : 'manual',
                 'size' => Storage::size($f),
                 'last_modified' => Storage::lastModified($f),
             ])
             ->sortByDesc('last_modified')
             ->values();
 
-        return view('backup.index', compact('backups'));
+        $settings = [
+            'backup_enabled' => (bool) Setting::get('backup_enabled', '0'),
+            'backup_interval_hours' => (int) Setting::get('backup_interval_hours', '24'),
+        ];
+
+        // Estimate next auto-backup time.
+        $nextRun = null;
+        if ($settings['backup_enabled']) {
+            $nextRun = $this->estimateNextAutoBackup($settings['backup_interval_hours']);
+        }
+
+        return view('backup.index', compact('backups', 'settings', 'nextRun'));
     }
 
     public function export()
@@ -33,6 +48,7 @@ class BackupController extends Controller
 
         $data = [
             'exported_at' => now()->toIso8601String(),
+            'kind' => 'manual',
             'users' => User::all()->map(fn ($u) => array_merge($u->toArray(), ['password' => $u->getAuthPassword()]))->values()->toArray(),
             'transactions' => Transaction::all()->toArray(),
             'salary_months' => SalaryMonth::all()->toArray(),
@@ -42,6 +58,36 @@ class BackupController extends Controller
         Storage::put($path, json_encode($data, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE));
 
         return redirect()->route('backup.index')->with('success', 'Backup created: ' . basename($path));
+    }
+
+    public function updateSettings(Request $request)
+    {
+        $validated = $request->validate([
+            'backup_enabled' => ['sometimes', 'boolean'],
+            'backup_interval_hours' => ['sometimes', 'integer', 'in:' . implode(',', self::ALLOWED_INTERVALS)],
+        ]);
+
+        if (array_key_exists('backup_enabled', $validated)) {
+            Setting::set('backup_enabled', $validated['backup_enabled'] ? '1' : '0');
+        }
+        if (array_key_exists('backup_interval_hours', $validated)) {
+            Setting::set('backup_interval_hours', $validated['backup_interval_hours']);
+        }
+
+        return redirect()->route('backup.index')->with('success', 'Backup settings updated.');
+    }
+
+    public function delete($name)
+    {
+        $path = 'backups/' . basename($name);
+
+        if (!Storage::exists($path)) {
+            return redirect()->route('backup.index')->with('error', 'Backup not found.');
+        }
+
+        Storage::delete($path);
+
+        return redirect()->route('backup.index')->with('success', 'Backup deleted: ' . basename($name));
     }
 
     public function download($name)
@@ -112,5 +158,31 @@ class BackupController extends Controller
         }
 
         return redirect()->route('backup.index')->with('success', 'Data restored successfully.');
+    }
+
+    private function estimateNextAutoBackup(int $intervalHours): ?\Illuminate\Support\Carbon
+    {
+        $latestTs = 0;
+        foreach (Storage::files('backups') as $f) {
+            if (!str_starts_with(basename($f), 'auto-')) {
+                continue;
+            }
+            $ts = Storage::lastModified($f);
+            if ($ts > $latestTs) {
+                $latestTs = $ts;
+            }
+        }
+
+        $last = $latestTs > 0
+            ? \Illuminate\Support\Carbon::createFromTimestamp($latestTs)
+            : null;
+
+        // Scheduler ticks hourly. Next slot = top of next hour.
+        if ($last === null) {
+            return now()->startOfHour()->addHour();
+        }
+
+        $next = $last->copy()->addHours($intervalHours);
+        return $next->isPast() ? now()->startOfHour()->addHour() : $next;
     }
 }
