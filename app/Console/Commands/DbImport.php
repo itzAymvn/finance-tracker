@@ -2,35 +2,34 @@
 
 namespace App\Console\Commands;
 
-use App\Models\SalaryAllocation;
-use App\Models\SalaryMonth;
-use App\Models\Transaction;
-use App\Models\User;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\DB;
 
 class DbImport extends Command
 {
     protected $signature = 'db:import {path : Path to the JSON backup file}';
+
     protected $description = 'Import data from a JSON backup file';
 
     public function handle()
     {
         $path = $this->argument('path');
 
-        if (!file_exists($path)) {
+        if (! file_exists($path)) {
             $this->error("File not found: {$path}");
+
             return 1;
         }
 
         $data = json_decode(file_get_contents($path), true);
 
-        if (!$data) {
+        if (! $data) {
             $this->error('Invalid JSON file');
+
             return 1;
         }
 
-        if (!$this->confirm('This will replace all existing data. Continue?')) {
+        if (! $this->confirm('This will replace all existing data. Continue?')) {
             return 0;
         }
 
@@ -41,10 +40,11 @@ class DbImport extends Command
 
             DB::delete('delete from salary_allocations');
             DB::delete('delete from transactions');
+            DB::delete('delete from subscriptions');
             DB::delete('delete from salary_months');
             DB::delete('delete from users');
 
-            $bar = $this->output->createProgressBar(count($data['users'] ?? []) + count($data['salary_months'] ?? []) + count($data['transactions'] ?? []) + count($data['salary_allocations'] ?? []));
+            $bar = $this->output->createProgressBar(count($data['users'] ?? []) + count($data['salary_months'] ?? []) + count($data['transactions'] ?? []) + count($data['subscriptions'] ?? []) + count($data['salary_allocations'] ?? []));
             $bar->start();
 
             foreach ($data['users'] ?? [] as $row) {
@@ -66,10 +66,22 @@ class DbImport extends Command
 
             foreach ($data['transactions'] ?? [] as $row) {
                 $raw = $row['raw'] ?? null;
-                if (is_array($raw)) $raw = json_encode($raw);
-                DB::insert('insert into transactions (id, paid_at, value_date, label, amount, source, raw, created_at, updated_at) values (?, ?, ?, ?, ?, ?, ?, ?, ?)', [
+                if (is_array($raw)) {
+                    $raw = json_encode($raw);
+                }
+                DB::insert('insert into transactions (id, paid_at, value_date, label, amount, source, subscription_id, raw, created_at, updated_at) values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)', [
                     $row['id'], $row['paid_at'], $row['value_date'] ?? null, $row['label'], $row['amount'],
-                    $row['source'] ?? 'manual', $raw,
+                    $row['source'] ?? 'manual', $row['subscription_id'] ?? null, $raw,
+                    $row['created_at'] ?? now(), $row['updated_at'] ?? now(),
+                ]);
+                $bar->advance();
+            }
+
+            foreach ($data['subscriptions'] ?? [] as $row) {
+                DB::insert('insert into subscriptions (id, label, amount, frequency, start_at, status, category_id, last_generated_at, created_at, updated_at) values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)', [
+                    $row['id'], $row['label'], $row['amount'], $row['frequency'],
+                    $row['start_at'] ?? null, $row['status'] ?? 'active',
+                    $row['category_id'] ?? null, $row['last_generated_at'] ?? null,
                     $row['created_at'] ?? now(), $row['updated_at'] ?? now(),
                 ]);
                 $bar->advance();

@@ -3,17 +3,20 @@
 namespace App\Console\Commands;
 
 use App\Models\Category;
-use App\Models\Setting;
 use App\Models\SalaryAllocation;
 use App\Models\SalaryMonth;
+use App\Models\Setting;
+use App\Models\Subscription;
 use App\Models\Transaction;
 use App\Models\User;
 use Illuminate\Console\Command;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Storage;
 
 class BackupAuto extends Command
 {
     protected $signature = 'backup:auto';
+
     protected $description = 'Create an automatic backup if enabled and the configured interval has elapsed since the last auto-backup.';
 
     private const ALLOWED_INTERVALS = [6, 12, 24, 168];
@@ -21,13 +24,14 @@ class BackupAuto extends Command
     public function handle(): int
     {
         $enabled = (bool) Setting::get('backup_enabled', '0');
-        if (!$enabled) {
+        if (! $enabled) {
             $this->info('Auto-backup disabled. Skipping.');
+
             return self::SUCCESS;
         }
 
         $intervalHours = (int) Setting::get('backup_interval_hours', '24');
-        if (!in_array($intervalHours, self::ALLOWED_INTERVALS, true)) {
+        if (! in_array($intervalHours, self::ALLOWED_INTERVALS, true)) {
             $this->warn("Invalid interval {$intervalHours}h. Falling back to 24h.");
             $intervalHours = 24;
         }
@@ -44,11 +48,12 @@ class BackupAuto extends Command
                     $intervalHours,
                     $remaining
                 ));
+
                 return self::SUCCESS;
             }
         }
 
-        $filename = 'backups/auto-' . now()->format('Y-m-d-His') . '.json';
+        $filename = 'backups/auto-'.now()->format('Y-m-d-His').'.json';
         $data = [
             'exported_at' => now()->toIso8601String(),
             'kind' => 'auto',
@@ -57,19 +62,21 @@ class BackupAuto extends Command
             'transactions' => Transaction::all()->toArray(),
             'salary_months' => SalaryMonth::all()->toArray(),
             'salary_allocations' => SalaryAllocation::all()->toArray(),
+            'subscriptions' => Subscription::all()->toArray(),
         ];
 
         Storage::put($filename, json_encode($data, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE));
 
-        $this->info("Auto-backup created: " . basename($filename));
+        $this->info('Auto-backup created: '.basename($filename));
+
         return self::SUCCESS;
     }
 
-    private function lastAutoBackupTimestamp(): ?\Illuminate\Support\Carbon
+    private function lastAutoBackupTimestamp(): ?Carbon
     {
         $latestTs = 0;
         foreach (Storage::files('backups') as $f) {
-            if (!str_starts_with(basename($f), 'auto-')) {
+            if (! str_starts_with(basename($f), 'auto-')) {
                 continue;
             }
             $ts = Storage::lastModified($f);
@@ -78,6 +85,6 @@ class BackupAuto extends Command
             }
         }
 
-        return $latestTs > 0 ? \Illuminate\Support\Carbon::createFromTimestamp($latestTs) : null;
+        return $latestTs > 0 ? Carbon::createFromTimestamp($latestTs) : null;
     }
 }

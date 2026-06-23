@@ -6,9 +6,11 @@ use App\Models\Category;
 use App\Models\SalaryAllocation;
 use App\Models\SalaryMonth;
 use App\Models\Setting;
+use App\Models\Subscription;
 use App\Models\Transaction;
 use App\Models\User;
 use Illuminate\Http\Request;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 use Inertia\Inertia;
@@ -50,7 +52,7 @@ class BackupController extends Controller
 
     public function export()
     {
-        $path = 'backups/backup-' . now()->format('Y-m-d-His') . '.json';
+        $path = 'backups/backup-'.now()->format('Y-m-d-His').'.json';
 
         $data = [
             'exported_at' => now()->toIso8601String(),
@@ -60,18 +62,19 @@ class BackupController extends Controller
             'transactions' => Transaction::all()->toArray(),
             'salary_months' => SalaryMonth::all()->toArray(),
             'salary_allocations' => SalaryAllocation::all()->toArray(),
+            'subscriptions' => Subscription::all()->toArray(),
         ];
 
         Storage::put($path, json_encode($data, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE));
 
-        return redirect()->route('backup.index')->with('success', 'Backup created: ' . basename($path));
+        return redirect()->route('backup.index')->with('success', 'Backup created: '.basename($path));
     }
 
     public function updateSettings(Request $request)
     {
         $validated = $request->validate([
             'backup_enabled' => ['sometimes', 'boolean'],
-            'backup_interval_hours' => ['sometimes', 'integer', 'in:' . implode(',', self::ALLOWED_INTERVALS)],
+            'backup_interval_hours' => ['sometimes', 'integer', 'in:'.implode(',', self::ALLOWED_INTERVALS)],
         ]);
 
         if (array_key_exists('backup_enabled', $validated)) {
@@ -86,22 +89,22 @@ class BackupController extends Controller
 
     public function delete($name)
     {
-        $path = 'backups/' . basename($name);
+        $path = 'backups/'.basename($name);
 
-        if (!Storage::exists($path)) {
+        if (! Storage::exists($path)) {
             return redirect()->route('backup.index')->with('error', 'Backup not found.');
         }
 
         Storage::delete($path);
 
-        return redirect()->route('backup.index')->with('success', 'Backup deleted: ' . basename($name));
+        return redirect()->route('backup.index')->with('success', 'Backup deleted: '.basename($name));
     }
 
     public function download($name)
     {
-        $path = 'backups/' . basename($name);
+        $path = 'backups/'.basename($name);
 
-        if (!Storage::exists($path)) {
+        if (! Storage::exists($path)) {
             return redirect()->route('backup.index')->with('error', 'Backup not found.');
         }
 
@@ -114,7 +117,7 @@ class BackupController extends Controller
 
         $data = json_decode(file_get_contents($request->file('file')->getRealPath()), true);
 
-        if (!$data || !isset($data['transactions'])) {
+        if (! $data || ! isset($data['transactions'])) {
             return redirect()->route('backup.index')->with('error', 'Invalid backup file.');
         }
 
@@ -123,6 +126,7 @@ class BackupController extends Controller
         DB::transaction(function () use ($data, $currentUser) {
             DB::delete('delete from salary_allocations');
             DB::delete('delete from transactions');
+            DB::delete('delete from subscriptions');
             DB::delete('delete from salary_months');
             DB::delete('delete from categories');
             DB::delete('delete from users');
@@ -151,10 +155,21 @@ class BackupController extends Controller
 
             foreach ($data['transactions'] ?? [] as $row) {
                 $raw = $row['raw'] ?? null;
-                if (is_array($raw)) $raw = json_encode($raw);
-                DB::insert('insert into transactions (id, paid_at, value_date, label, amount, source, category_id, raw, created_at, updated_at) values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)', [
+                if (is_array($raw)) {
+                    $raw = json_encode($raw);
+                }
+                DB::insert('insert into transactions (id, paid_at, value_date, label, amount, source, category_id, subscription_id, raw, created_at, updated_at) values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)', [
                     $row['id'], $row['paid_at'], $row['value_date'] ?? null, $row['label'], $row['amount'],
-                    $row['source'] ?? 'manual', $row['category_id'] ?? null, $raw,
+                    $row['source'] ?? 'manual', $row['category_id'] ?? null, $row['subscription_id'] ?? null, $raw,
+                    $row['created_at'] ?? now(), $row['updated_at'] ?? now(),
+                ]);
+            }
+
+            foreach ($data['subscriptions'] ?? [] as $row) {
+                DB::insert('insert into subscriptions (id, label, amount, frequency, start_at, status, category_id, last_generated_at, created_at, updated_at) values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)', [
+                    $row['id'], $row['label'], $row['amount'], $row['frequency'],
+                    $row['start_at'] ?? null, $row['status'] ?? 'active',
+                    $row['category_id'] ?? null, $row['last_generated_at'] ?? null,
                     $row['created_at'] ?? now(), $row['updated_at'] ?? now(),
                 ]);
             }
@@ -175,11 +190,11 @@ class BackupController extends Controller
         return redirect()->route('backup.index')->with('success', 'Data restored successfully.');
     }
 
-    private function estimateNextAutoBackup(int $intervalHours): ?\Illuminate\Support\Carbon
+    private function estimateNextAutoBackup(int $intervalHours): ?Carbon
     {
         $latestTs = 0;
         foreach (Storage::files('backups') as $f) {
-            if (!str_starts_with(basename($f), 'auto-')) {
+            if (! str_starts_with(basename($f), 'auto-')) {
                 continue;
             }
             $ts = Storage::lastModified($f);
@@ -189,7 +204,7 @@ class BackupController extends Controller
         }
 
         $last = $latestTs > 0
-            ? \Illuminate\Support\Carbon::createFromTimestamp($latestTs)
+            ? Carbon::createFromTimestamp($latestTs)
             : null;
 
         // Scheduler ticks hourly. Next slot = top of next hour.
@@ -198,6 +213,7 @@ class BackupController extends Controller
         }
 
         $next = $last->copy()->addHours($intervalHours);
+
         return $next->isPast() ? now()->startOfHour()->addHour() : $next;
     }
 }
