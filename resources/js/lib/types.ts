@@ -168,3 +168,31 @@ export interface ProfileEditProps extends PageProps {
 export interface CategoriesIndexProps extends PageProps {
     categories: Category[];
 }
+
+export type SubscriptionFrequency = 'weekly' | 'biweekly' | 'monthly' | 'quarterly' | 'yearly';
+export type SubscriptionStatus = 'active' | 'paused' | 'cancelled';
+
+export interface Subscription {
+    id: number;
+    label: string;
+    amount: string;
+    frequency: SubscriptionFrequency;
+    start_at: string;
+    status: SubscriptionStatus;
+    category_id: number | null;
+    category: Category | null;
+    last_generated_at: string | null;
+    next_due_at: string | null;
+    transactions_count: number;
+}
+
+export interface SubscriptionsIndexProps extends PageProps {
+    subscriptions: Subscription[];
+    summary: {
+        active: number;
+        paused: number;
+        cancelled: number;
+        monthly_cost: number;
+    };
+    categories: Category[];
+}

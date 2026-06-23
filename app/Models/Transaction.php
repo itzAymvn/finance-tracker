@@ -17,6 +17,7 @@ class Transaction extends Model
         'source',
         'category_id',
         'salary_month_id',
+        'subscription_id',
         'raw',
     ];
 
@@ -35,6 +36,11 @@ class Transaction extends Model
     public function category(): BelongsTo
     {
         return $this->belongsTo(Category::class);
+    }
+
+    public function subscription(): BelongsTo
+    {
+        return $this->belongsTo(Subscription::class);
     }
 
     public function allocations(): HasMany

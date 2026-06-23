@@ -1,5 +1,5 @@
 import { createContext, useContext, useState, useCallback, type ReactNode } from 'react';
-import type { Transaction, SalaryMonth } from '@/lib/types';
+import type { Transaction, SalaryMonth, Subscription } from '@/lib/types';
 
 interface ModalState {
     transactionOpen: boolean;
@@ -11,6 +11,8 @@ interface ModalState {
     deletingTransaction: Transaction | null;
     deleteSalaryMonthOpen: boolean;
     deletingSalaryMonth: SalaryMonth | null;
+    subscriptionOpen: boolean;
+    editingSubscription: Subscription | null;
 }
 
 interface ModalContextValue extends ModalState {
@@ -24,6 +26,8 @@ interface ModalContextValue extends ModalState {
     closeDeleteTransaction: () => void;
     openDeleteSalaryMonth: (m: SalaryMonth) => void;
     closeDeleteSalaryMonth: () => void;
+    openSubscription: (sub?: Subscription | null) => void;
+    closeSubscription: () => void;
 }
 
 const initialState: ModalState = {
@@ -36,6 +40,8 @@ const initialState: ModalState = {
     deletingTransaction: null,
     deleteSalaryMonthOpen: false,
     deletingSalaryMonth: null,
+    subscriptionOpen: false,
+    editingSubscription: null,
 };
 
 const ModalContext = createContext<ModalContextValue>({
@@ -50,6 +56,8 @@ const ModalContext = createContext<ModalContextValue>({
     closeDeleteTransaction: () => {},
     openDeleteSalaryMonth: () => {},
     closeDeleteSalaryMonth: () => {},
+    openSubscription: () => {},
+    closeSubscription: () => {},
 });
 
 export function ModalProvider({ children }: { children: ReactNode }) {
@@ -95,6 +103,14 @@ export function ModalProvider({ children }: { children: ReactNode }) {
         setState((s) => ({ ...s, deleteSalaryMonthOpen: false, deletingSalaryMonth: null }));
     }, []);
 
+    const openSubscription = useCallback((sub?: Subscription | null) => {
+        setState((s) => ({ ...s, subscriptionOpen: true, editingSubscription: sub ?? null }));
+    }, []);
+
+    const closeSubscription = useCallback(() => {
+        setState((s) => ({ ...s, subscriptionOpen: false, editingSubscription: null }));
+    }, []);
+
     return (
         <ModalContext.Provider
             value={{
@@ -109,6 +125,8 @@ export function ModalProvider({ children }: { children: ReactNode }) {
                 closeDeleteTransaction,
                 openDeleteSalaryMonth,
                 closeDeleteSalaryMonth,
+                openSubscription,
+                closeSubscription,
             }}
         >
             {children}

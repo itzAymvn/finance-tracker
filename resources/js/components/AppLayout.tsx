@@ -11,6 +11,7 @@ import { useModals } from '@/contexts/ModalContext';
 import { TransactionDialog } from '@/components/TransactionDialog';
 import { SalaryMonthDialog } from '@/components/SalaryMonthDialog';
 import { SalaryPeriodDialog } from '@/components/SalaryPeriodDialog';
+import { SubscriptionDialog } from '@/components/SubscriptionDialog';
 
 function AppLayoutInner({ children }: { children: ReactNode }) {
     const modals = useModals();
@@ -34,6 +35,7 @@ function AppLayoutInner({ children }: { children: ReactNode }) {
             <TransactionDialog />
             <SalaryMonthDialog />
             <SalaryPeriodDialog />
+            <SubscriptionDialog />
         </SidebarProvider>
     );
 }
