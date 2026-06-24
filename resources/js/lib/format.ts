@@ -51,11 +51,15 @@ export function formatSize(bytes: number): string {
 export function relativeTime(timestamp: number): string {
     const now = Date.now() / 1000;
     const diff = now - timestamp;
-    if (diff < 60) return 'just now';
-    if (diff < 3600) return `${Math.floor(diff / 60)}m ago`;
-    if (diff < 86400) return `${Math.floor(diff / 3600)}h ago`;
-    if (diff < 2592000) return `${Math.floor(diff / 86400)}d ago`;
-    return formatDate(new Date(timestamp * 1000).toISOString());
+    const abs = Math.abs(diff);
+    const unit = abs < 60 ? 'just now'
+        : abs < 3600 ? `${Math.floor(abs / 60)}m`
+        : abs < 86400 ? `${Math.floor(abs / 3600)}h`
+        : abs < 2592000 ? `${Math.floor(abs / 86400)}d`
+        : null;
+    if (unit === null) return formatDate(new Date(timestamp * 1000).toISOString());
+    if (unit === 'just now') return 'just now';
+    return diff > 0 ? `${unit} ago` : `in ${unit}`;
 }
 
 export function monthKeyToLabel(monthKey: string): string {

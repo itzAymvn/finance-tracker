@@ -38,7 +38,7 @@ class BackupAuto extends Command
 
         $last = $this->lastAutoBackupTimestamp();
         if ($last !== null) {
-            $elapsedMinutes = (int) now()->diffInMinutes($last);
+            $elapsedMinutes = (int) now()->diffInMinutes($last, true);
             $intervalMinutes = $intervalHours * 60;
             if ($elapsedMinutes < $intervalMinutes) {
                 $remaining = $intervalMinutes - $elapsedMinutes;
