@@ -66,7 +66,31 @@ class Subscription extends Model
 
     public function resume(): void
     {
-        $this->update(['status' => 'active']);
+        // Advance last_generated_at to now so resumed periods are counted
+        // from the resume point rather than back-filling the paused gap.
+        $this->update([
+            'status' => 'active',
+            'last_generated_at' => $this->last_generated_at && $this->last_generated_at->lt(now())
+                ? now()
+                : $this->last_generated_at,
+        ]);
+    }
+
+    /**
+     * Next due date strictly after the given reference point.
+     * Centralised here so generation (service) and display (controller)
+     * share the same frequency arithmetic.
+     */
+    public function nextDueAfter(Carbon $from): ?Carbon
+    {
+        return match ($this->frequency) {
+            'weekly' => $from->copy()->addWeek(),
+            'biweekly' => $from->copy()->addWeeks(2),
+            'monthly' => $from->copy()->addMonth(),
+            'quarterly' => $from->copy()->addMonths(3),
+            'yearly' => $from->copy()->addYear(),
+            default => null,
+        };
     }
 
     public function cancel(): void
@@ -76,23 +100,16 @@ class Subscription extends Model
 
     public function getNextDueAt(): ?Carbon
     {
-        if (!$this->start_at) {
+        if (! $this->start_at) {
             return null;
         }
 
         // No transactions generated yet — first one is due at start_at
-        if (!$this->last_generated_at) {
+        if (! $this->last_generated_at) {
             return $this->start_at;
         }
 
-        return match ($this->frequency) {
-            'weekly'    => $this->last_generated_at->copy()->addWeek(),
-            'biweekly'  => $this->last_generated_at->copy()->addWeeks(2),
-            'monthly'   => $this->last_generated_at->copy()->addMonth(),
-            'quarterly' => $this->last_generated_at->copy()->addMonths(3),
-            'yearly'    => $this->last_generated_at->copy()->addYear(),
-            default     => null,
-        };
+        return $this->nextDueAfter($this->last_generated_at);
     }
 
     public function isCredit(): bool
