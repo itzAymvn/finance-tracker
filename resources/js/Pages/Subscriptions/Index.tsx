@@ -2,7 +2,8 @@ import { useState } from 'react';
 import { router, usePage } from '@inertiajs/react';
 import { Plus, Pause, Play, XCircle, Pencil, Trash2, Repeat, ArrowUpCircle, ArrowDownCircle } from 'lucide-react';
 import type { SubscriptionsIndexProps, Subscription, SubscriptionFrequency, SubscriptionStatus } from '@/lib/types';
-import { formatMoney, formatDate } from '@/lib/format';
+import { formatMoney, formatDate, formatCountdown } from '@/lib/format';
+import { useCountdown } from '@/lib/hooks';
 import { getCategoryIcon } from '@/lib/icons';
 import { useModals } from '@/contexts/ModalContext';
 import { AppLayout } from '@/components/AppLayout';
@@ -35,6 +36,17 @@ function statusConfig(status: SubscriptionStatus) {
         case 'cancelled':
             return { label: 'Cancelled', className: 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400' };
     }
+}
+
+function NextDue({ iso, fallback }: { iso: string | null; fallback: string }) {
+    const remaining = useCountdown(iso);
+    if (remaining === null) return <>{fallback}</>;
+    const overdue = remaining < 0;
+    return (
+        <span className={`font-mono tabular-nums ${overdue ? 'text-amber-600 dark:text-amber-400' : ''}`}>
+            {overdue ? 'overdue ' : 'in '}{formatCountdown(remaining)}
+        </span>
+    );
 }
 
 export default function SubscriptionsIndex() {
@@ -165,7 +177,9 @@ export default function SubscriptionsIndex() {
                                             {sub.next_due_at && (
                                                 <>
                                                     <span className="text-xs text-muted-foreground/40">·</span>
-                                                    <span className="text-xs text-muted-foreground">Next: {formatDate(sub.next_due_at, 'short')}</span>
+                                                    <span className="text-xs text-muted-foreground">
+                                                        Next <NextDue iso={sub.next_due_at} fallback={formatDate(sub.next_due_at, 'short')} />
+                                                    </span>
                                                 </>
                                             )}
                                         </div>

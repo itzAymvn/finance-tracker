@@ -68,6 +68,22 @@ export function monthKeyToLabel(monthKey: string): string {
     return d.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
 }
 
+export function formatCountdown(ms: number): string {
+    const sign = ms < 0 ? '-' : '';
+    let s = Math.floor(Math.abs(ms) / 1000);
+    const d = Math.floor(s / 86400);
+    s -= d * 86400;
+    const h = Math.floor(s / 3600);
+    s -= h * 3600;
+    const m = Math.floor(s / 60);
+    s -= m * 60;
+
+    if (d > 0) return `${sign}${d}d ${String(h).padStart(2, '0')}h ${String(m).padStart(2, '0')}m`;
+    if (h > 0) return `${sign}${h}h ${String(m).padStart(2, '0')}m ${String(s).padStart(2, '0')}s`;
+    if (m > 0) return `${sign}${m}m ${String(s).padStart(2, '0')}s`;
+    return `${sign}${s}s`;
+}
+
 export function statusBadgeClass(status: string): string {
     switch (status) {
         case 'paid': return 'badge-emerald';

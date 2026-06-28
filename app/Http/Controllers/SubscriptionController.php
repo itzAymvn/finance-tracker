@@ -14,8 +14,6 @@ class SubscriptionController extends Controller
     {
         $subscriptions = Subscription::with('category')
             ->withCount('transactions')
-            ->orderBy('status')
-            ->orderBy('label')
             ->get()
             ->map(fn (Subscription $sub) => [
                 'id' => $sub->id,
@@ -34,7 +32,9 @@ class SubscriptionController extends Controller
                 'last_generated_at' => $sub->last_generated_at?->toIso8601String(),
                 'next_due_at' => $sub->isActive() ? $sub->getNextDueAt()?->toIso8601String() : null,
                 'transactions_count' => $sub->transactions_count,
-            ]);
+            ])
+            ->sortBy(callback: fn ($sub) => [$sub['status'], $sub['next_due_at'] ?? PHP_INT_MAX, $sub['label']])
+            ->values();
 
         $summary = [
             'active' => $subscriptions->where('status', 'active')->count(),
