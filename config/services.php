@@ -31,4 +31,10 @@ return [
         ],
     ],
 
+    'discord' => [
+        'webhook_url' => env('DISCORD_WEBHOOK_URL'),
+        'user_id' => env('DISCORD_USER_ID'),
+        'notify_hours' => (float) env('SUBSCRIPTION_NOTIFY_HOURS', 1),
+    ],
+
 ];

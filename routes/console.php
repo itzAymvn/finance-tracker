@@ -12,3 +12,4 @@ Artisan::command('inspire', function () {
 // to actually create a backup based on the configured interval.
 Schedule::command('backup:auto')->hourly()->description('Automatic backup (if enabled and interval elapsed)');
 Schedule::command('subscriptions:generate')->everyFiveMinutes()->description('Generate due subscription transactions');
+Schedule::command('subscriptions:notify')->everyFiveMinutes()->description('Send Discord renewal notifications');
