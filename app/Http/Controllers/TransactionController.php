@@ -30,9 +30,9 @@ class TransactionController extends Controller
         if ($type = $request->query('type')) {
             match ($type) {
                 'credit' => $query->where('amount', '>', 0),
-                'debit'  => $query->where('amount', '<', 0),
+                'debit' => $query->where('amount', '<', 0),
                 'salary' => $query->whereHas('category', fn ($cq) => $cq->where('is_salary', true)),
-                default  => null,
+                default => null,
             };
         }
         if ($category = $request->query('category')) {
@@ -46,9 +46,9 @@ class TransactionController extends Controller
         // Snapshot of the filtered set for the summary strip (without pagination).
         $clone = clone $query;
         $summary = [
-            'count'   => (int) $clone->count(),
+            'count' => (int) $clone->count(),
             'credits' => (float) (clone $query)->where('amount', '>', 0)->sum('amount'),
-            'debits'  => (float) (clone $query)->where('amount', '<', 0)->sum('amount'),
+            'debits' => (float) (clone $query)->where('amount', '<', 0)->sum('amount'),
         ];
         $summary['net'] = $summary['credits'] + $summary['debits'];
 
@@ -105,12 +105,12 @@ class TransactionController extends Controller
         $valueDate = $data['value_date'] ?? null;
 
         $transaction = Transaction::create([
-            'paid_at'      => $data['paid_at'].' 12:00:00',
-            'value_date'   => $valueDate ? $valueDate.' 12:00:00' : null,
-            'label'        => $data['label'],
-            'amount'       => $data['amount'],
-            'source'       => 'manuel',
-            'category_id'  => $data['category_id'] ?? null,
+            'paid_at' => $data['paid_at'].' 12:00:00',
+            'value_date' => $valueDate ? $valueDate.' 12:00:00' : null,
+            'label' => $data['label'],
+            'amount' => $data['amount'],
+            'source' => 'manuel',
+            'category_id' => $data['category_id'] ?? null,
         ]);
 
         $transaction->load('category');
@@ -162,6 +162,12 @@ class TransactionController extends Controller
     {
         $transaction->label = $request->input('label');
         $transaction->category_id = $request->input('category_id');
+
+        if ($request->has('amount')) {
+            $sign = (float) $transaction->amount >= 0 ? 1 : -1;
+            $transaction->amount = round(abs((float) $request->input('amount')) * $sign, 2);
+        }
+
         $transaction->save();
 
         $transaction->load('category');

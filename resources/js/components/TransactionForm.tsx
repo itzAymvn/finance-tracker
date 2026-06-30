@@ -37,6 +37,7 @@ const createSchema = z.object({
 const editSchema = z.object({
     label: z.string().min(1, 'Label is required').max(255),
     category_id: z.coerce.number().nullable().optional(),
+    amount: z.coerce.number().positive('Amount must be greater than 0').optional(),
 });
 
 type CreateValues = z.infer<typeof createSchema>;
@@ -69,6 +70,7 @@ export function TransactionForm({ transaction, categories = [], onSuccess }: Tra
         defaultValues: {
             label: transaction?.label ?? '',
             category_id: transaction?.category_id ?? null,
+            amount: transaction ? Math.abs(parseFloat(transaction.amount)) : undefined,
         },
     });
 
@@ -95,7 +97,11 @@ export function TransactionForm({ transaction, categories = [], onSuccess }: Tra
 
     function onEditSubmit(data: EditValues) {
         if (!transaction) return;
-        router.patch(`/transactions/${transaction.id}`, data, {
+        const payload: Record<string, unknown> = { label: data.label, category_id: data.category_id };
+        if (!transaction.category?.is_salary && data.amount != null) {
+            payload.amount = data.amount;
+        }
+        router.patch(`/transactions/${transaction.id}`, payload, {
             onSuccess: () => onSuccess?.(),
             onError: handleEditError,
         });
@@ -109,7 +115,7 @@ export function TransactionForm({ transaction, categories = [], onSuccess }: Tra
         return (
             <>
                 <div className="space-y-0">
-                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-y-3 gap-x-4 pb-4 border-b border-border">
+                    <div className={`grid grid-cols-2 ${transaction.category?.is_salary ? 'sm:grid-cols-4' : 'sm:grid-cols-3'} gap-y-3 gap-x-4 pb-4 border-b border-border`}>
                         <div>
                             <p className="text-[10px] font-semibold tracking-wider uppercase text-muted-foreground mb-0.5">Date</p>
                             <p className="text-sm font-medium text-foreground">{formatDate(transaction.paid_at)}</p>
@@ -118,19 +124,21 @@ export function TransactionForm({ transaction, categories = [], onSuccess }: Tra
                             <p className="text-[10px] font-semibold tracking-wider uppercase text-muted-foreground mb-0.5">Source</p>
                             <p className="text-xs uppercase tracking-wider font-medium text-muted-foreground">{transaction.source}</p>
                         </div>
-                        <div>
-                            <p className="text-[10px] font-semibold tracking-wider uppercase text-muted-foreground mb-0.5">Amount</p>
-                            <p className={`font-mono text-sm font-semibold ${credit ? 'text-emerald-600' : 'text-red-600'}`}>
-                                {credit ? '+' : ''}{formatMoney(transaction.amount)}
-                            </p>
-                        </div>
+                        {transaction.category?.is_salary && (
+                            <div>
+                                <p className="text-[10px] font-semibold tracking-wider uppercase text-muted-foreground mb-0.5">Amount</p>
+                                <p className={`font-mono text-sm font-semibold ${credit ? 'text-emerald-600' : 'text-red-600'}`}>
+                                    {credit ? '+' : ''}{formatMoney(transaction.amount)}
+                                </p>
+                            </div>
+                        )}
                         <div>
                             <p className="text-[10px] font-semibold tracking-wider uppercase text-muted-foreground mb-0.5">Type</p>
                             <p className={`text-xs uppercase tracking-wider font-medium ${credit ? 'text-emerald-600' : 'text-red-600'}`}>
                                 {credit ? 'Credit' : 'Debit'}
                             </p>
                         </div>
-                        <div className="col-span-2 sm:col-span-4">
+                        <div className={`col-span-2 ${transaction.category?.is_salary ? 'sm:col-span-4' : 'sm:col-span-3'}`}>
                             <p className="text-[10px] font-semibold tracking-wider uppercase text-muted-foreground mb-0.5">Label</p>
                             <p className="text-sm font-medium text-foreground leading-snug">{transaction.label}</p>
                         </div>
@@ -161,6 +169,35 @@ export function TransactionForm({ transaction, categories = [], onSuccess }: Tra
 
                     <Form {...editForm}>
                         <form onSubmit={editForm.handleSubmit(onEditSubmit)} className="pt-3 space-y-4">
+                            {!transaction.category?.is_salary && (
+                                <FormField
+                                    control={editForm.control}
+                                    name="amount"
+                                    render={({ field }) => (
+                                        <FormItem>
+                                            <FormLabel>Amount</FormLabel>
+                                            <FormControl>
+                                                <div className="relative">
+                                                    <Input
+                                                        type="number"
+                                                        step="0.01"
+                                                        min="0"
+                                                        placeholder="0.00"
+                                                        className="pl-12 py-2.5 text-lg font-mono"
+                                                        {...field}
+                                                        value={field.value ?? ''}
+                                                    />
+                                                    <span className={`absolute left-3 top-1/2 -translate-y-1/2 text-sm font-mono ${credit ? 'text-emerald-600' : 'text-red-600'}`}>
+                                                        {credit ? '+' : '\u2212'}
+                                                    </span>
+                                                </div>
+                                            </FormControl>
+                                            <FormMessage />
+                                        </FormItem>
+                                    )}
+                                />
+                            )}
+
                             <FormField
                                 control={editForm.control}
                                 name="label"
