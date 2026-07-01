@@ -64,6 +64,7 @@ class TransactionController extends Controller
                 'paid_at' => $tx->paid_at->toIso8601String(),
                 'value_date' => $tx->value_date?->toIso8601String(),
                 'label' => $tx->label,
+                'details' => $tx->details,
                 'amount' => $tx->amount,
                 'source' => $tx->source,
                 'category_id' => $tx->category_id,
@@ -108,6 +109,7 @@ class TransactionController extends Controller
             'paid_at' => $data['paid_at'].' 12:00:00',
             'value_date' => $valueDate ? $valueDate.' 12:00:00' : null,
             'label' => $data['label'],
+            'details' => $data['details'] ?? null,
             'amount' => $data['amount'],
             'source' => 'manuel',
             'category_id' => $data['category_id'] ?? null,
@@ -133,6 +135,7 @@ class TransactionController extends Controller
                 'paid_at' => $transaction->paid_at->toIso8601String(),
                 'value_date' => $transaction->value_date?->toIso8601String(),
                 'label' => $transaction->label,
+                'details' => $transaction->details,
                 'amount' => $transaction->amount,
                 'source' => $transaction->source,
                 'category_id' => $transaction->category_id,
@@ -161,6 +164,7 @@ class TransactionController extends Controller
     public function update(UpdateTransactionRequest $request, Transaction $transaction)
     {
         $transaction->label = $request->input('label');
+        $transaction->details = $request->input('details');
         $transaction->category_id = $request->input('category_id');
 
         if ($request->has('amount')) {

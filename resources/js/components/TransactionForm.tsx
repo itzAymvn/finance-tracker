@@ -31,11 +31,13 @@ const createSchema = z.object({
     paid_at: z.string().min(1, 'Date is required'),
     value_date: z.string().optional(),
     label: z.string().min(1, 'Label is required').max(255),
+    details: z.string().optional(),
     category_id: z.coerce.number().nullable().optional(),
 });
 
 const editSchema = z.object({
     label: z.string().min(1, 'Label is required').max(255),
+    details: z.string().optional(),
     category_id: z.coerce.number().nullable().optional(),
     amount: z.coerce.number().positive('Amount must be greater than 0').optional(),
 });
@@ -61,6 +63,7 @@ export function TransactionForm({ transaction, categories = [], onSuccess }: Tra
             paid_at: new Date().toISOString().split('T')[0],
             value_date: '',
             label: '',
+            details: '',
             category_id: null,
         },
     });
@@ -69,6 +72,7 @@ export function TransactionForm({ transaction, categories = [], onSuccess }: Tra
         resolver: zodResolver(editSchema),
         defaultValues: {
             label: transaction?.label ?? '',
+            details: transaction?.details ?? '',
             category_id: transaction?.category_id ?? null,
             amount: transaction ? Math.abs(parseFloat(transaction.amount)) : undefined,
         },
@@ -97,7 +101,7 @@ export function TransactionForm({ transaction, categories = [], onSuccess }: Tra
 
     function onEditSubmit(data: EditValues) {
         if (!transaction) return;
-        const payload: Record<string, unknown> = { label: data.label, category_id: data.category_id };
+        const payload: Record<string, unknown> = { label: data.label, details: data.details, category_id: data.category_id };
         if (!transaction.category?.is_salary && data.amount != null) {
             payload.amount = data.amount;
         }
@@ -140,7 +144,7 @@ export function TransactionForm({ transaction, categories = [], onSuccess }: Tra
                         </div>
                         <div className={`col-span-2 ${transaction.category?.is_salary ? 'sm:col-span-4' : 'sm:col-span-3'}`}>
                             <p className="text-[10px] font-semibold tracking-wider uppercase text-muted-foreground mb-0.5">Label</p>
-                            <p className="text-sm font-medium text-foreground leading-snug">{transaction.label}</p>
+                            <p className="text-sm font-medium text-foreground leading-snug uppercase">{transaction.label}</p>
                         </div>
                     </div>
 
@@ -204,6 +208,20 @@ export function TransactionForm({ transaction, categories = [], onSuccess }: Tra
                                 render={({ field }) => (
                                     <FormItem>
                                         <FormLabel>Label</FormLabel>
+                                        <FormControl>
+                                            <Input {...field} />
+                                        </FormControl>
+                                        <FormMessage />
+                                    </FormItem>
+                                )}
+                            />
+
+                            <FormField
+                                control={editForm.control}
+                                name="details"
+                                render={({ field }) => (
+                                    <FormItem>
+                                        <FormLabel>Details <span className="text-muted-foreground normal-case font-normal">(optional)</span></FormLabel>
                                         <FormControl>
                                             <Input {...field} />
                                         </FormControl>
@@ -384,6 +402,26 @@ export function TransactionForm({ transaction, categories = [], onSuccess }: Tra
                             <FormControl>
                                 <Input
                                     placeholder="e.g. VIREMENT RECU DE ... / PAIEMENT CARTE ..."
+                                    className="py-2.5"
+                                    {...field}
+                                />
+                            </FormControl>
+                            <FormMessage />
+                        </FormItem>
+                    )}
+                />
+
+                <FormField
+                    control={createForm.control}
+                    name="details"
+                    render={({ field }) => (
+                        <FormItem>
+                            <FormLabel>
+                                Details <span className="text-muted-foreground normal-case font-normal">(optional)</span>
+                            </FormLabel>
+                            <FormControl>
+                                <Input
+                                    placeholder="e.g. 1000 Gold, 3 Month Subscription..."
                                     className="py-2.5"
                                     {...field}
                                 />

@@ -18,6 +18,7 @@ class StoreTransactionRequest extends FormRequest
         return [
             'paid_at'        => ['required', 'date'],
             'label'          => ['required', 'string', 'max:255'],
+            'details'        => ['nullable', 'string', 'max:65535'],
             'amount'         => ['required', 'numeric', 'not_in:0'],
             'amount_sign'    => ['required', 'in:1,-1'],
             'value_date'     => ['nullable', 'date'],

@@ -33,6 +33,7 @@ export interface Transaction {
     paid_at: string;
     value_date: string | null;
     label: string;
+    details: string | null;
     amount: string;
     source: string;
     category_id?: number | null;

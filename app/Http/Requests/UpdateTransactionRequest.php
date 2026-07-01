@@ -17,6 +17,7 @@ class UpdateTransactionRequest extends FormRequest
     {
         return [
             'label' => ['required', 'string', 'max:255'],
+            'details' => ['nullable', 'string', 'max:65535'],
             'category_id' => ['nullable', 'exists:categories,id'],
             'amount' => ['sometimes', 'numeric', 'gt:0'],
         ];

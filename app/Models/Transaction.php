@@ -19,6 +19,7 @@ class Transaction extends Model
         'salary_month_id',
         'subscription_id',
         'raw',
+        'details',
     ];
 
     protected $casts = [

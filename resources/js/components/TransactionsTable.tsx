@@ -7,6 +7,7 @@ import { useModals } from '@/contexts/ModalContext';
 import { Popover, PopoverTrigger, PopoverContent } from '@/components/ui/popover';
 import { Button } from '@/components/ui/button';
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '@/components/ui/table';
+import { Badge } from '@/components/ui/badge';
 
 const columnHelper = createColumnHelper<Transaction>();
 
@@ -17,11 +18,29 @@ const columns = [
     }),
     columnHelper.accessor('label', {
         header: 'Label',
-        cell: (info) => (
-            <div className="max-w-[400px] truncate" title={info.getValue()}>
-                {info.getValue()}
-            </div>
-        ),
+        cell: (info) => {
+            const details = info.row.original.details;
+            if (details) {
+                return (
+                    <Popover>
+                        <PopoverTrigger className="cursor-pointer">
+                            <span className="max-w-[400px] truncate block hover:text-primary transition-colors text-left uppercase">
+                                {info.getValue()}
+                            </span>
+                        </PopoverTrigger>
+                        <PopoverContent className="w-72 p-4" align="start">
+                            <p className="text-sm font-medium text-foreground mb-1 uppercase">{info.getValue()}</p>
+                            <p className="text-xs text-muted-foreground leading-relaxed">{details}</p>
+                        </PopoverContent>
+                    </Popover>
+                );
+            }
+            return (
+                <div className="max-w-[400px] truncate uppercase" title={info.getValue()}>
+                    {info.getValue()}
+                </div>
+            );
+        },
     }),
     columnHelper.display({
         id: 'category',
